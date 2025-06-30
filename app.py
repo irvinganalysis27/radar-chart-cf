@@ -138,7 +138,7 @@ if uploaded_file:
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
 
-    # --- Leaderboard: average z-score ---
+    # Leaderboard Z-score
     selected_metrics = list(metric_groups.keys())
     z_scores = (percentile_df[selected_metrics] - 50) / 15
     plot_data['Average Z Score'] = z_scores.mean(axis=1).round(2)
@@ -148,14 +148,13 @@ if uploaded_file:
     ).reset_index(drop=True)
 
     st.markdown("### 🏆 Z-Score Leaderboard")
-    selected_player = st.selectbox(
-        "Choose a player to view radar chart",
-        options=leaderboard['Player'].tolist()
-    )
+
+    # Select player from full plot_data (prevents KeyError)
+    player_options = plot_data['Player'].dropna().unique().tolist()
+    selected_player = st.selectbox("Choose a player to view radar chart", options=player_options)
 
     def highlight_selected(row):
-        color = 'background-color: #FFF176; font-weight: bold;' if row['Player'] == selected_player else ''
-        return [color] * len(row)
+        return ['background-color: #FFF176; font-weight: bold;' if row['Player'] == selected_player else ''] * len(row)
 
     st.dataframe(
         leaderboard.style.apply(highlight_selected, axis=1),
