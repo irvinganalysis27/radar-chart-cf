@@ -52,7 +52,6 @@ position_metrics = {
             "Defensive duels per 90": "Defensive",
             "Defensive duels won, %": "Defensive",
             "PAdj Interceptions": "Defensive",
-            "Assists per 90": "Attacking",
             "Crosses per 90": "Possession",
             "Accurate crosses, %": "Possession",
             "Dribbles per 90": "Possession",
@@ -60,6 +59,7 @@ position_metrics = {
             "Offensive duels per 90": "Possession",
             "Offensive duels won, %": "Possession",
             "xA per 90": "Attacking",
+            "Assists per 90": "Attacking",
             "Passes to final third per 90": "Possession",
             "Accurate passes to final third, %": "Possession"
         }
