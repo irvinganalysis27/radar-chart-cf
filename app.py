@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --- Basic password protection ---
-PASSWORD = "yourpassword123"
+PASSWORD = "cowboy"
 st.title("⚽ Radar Chart Explorer")
 
 pwd = st.text_input("Enter password:", type="password")
