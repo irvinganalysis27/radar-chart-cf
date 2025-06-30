@@ -30,7 +30,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     num_bars = len(selected_metrics)
     angles = np.linspace(0, 2 * np.pi, num_bars, endpoint=False)
 
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(polar=True))
     fig.patch.set_facecolor('white')
     ax.set_facecolor('white')
     ax.set_theta_offset(np.pi / 2)
