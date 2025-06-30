@@ -22,8 +22,8 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         return
 
     selected_metrics = list(metric_groups.keys())
-    raw = row[selected_metrics].values.flatten()
-    percentiles = row[[m + ' (percentile)' for m in selected_metrics]].values.flatten()
+    raw = row[selected_metrics].fillna(0).values.flatten()
+    percentiles = row[[m + ' (percentile)' for m in selected_metrics]].fillna(0).values.flatten()
     groups = [metric_groups[m] for m in selected_metrics]
     colors = [group_colors[g] for g in groups]
 
@@ -41,8 +41,8 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     ax.spines['polar'].set_visible(False)
 
     # Bars
-    bars = ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
-                  color=colors, edgecolor=colors, alpha=0.75)
+    ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
+           color=colors, edgecolor=colors, alpha=0.75)
 
     # Raw numbers (fixed halfway)
     for i, (angle, raw_val) in enumerate(zip(angles, raw)):
@@ -79,20 +79,20 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
     # --- Average Z-score Calculation ---
-    z_scores = (percentiles - 50) / 15  # Z-score approx.
+    z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
-    # Badge color and label
+    # Badge
     if avg_z >= 1.0:
-        badge = ("Excellent", "#228B22")  # Green
+        badge = ("Excellent", "#228B22")
     elif avg_z >= 0.3:
-        badge = ("Good", "#1E90FF")  # Blue
+        badge = ("Good", "#1E90FF")
     elif avg_z >= -0.3:
-        badge = ("Average", "#DAA520")  # Goldenrod
+        badge = ("Average", "#DAA520")
     else:
-        badge = ("Below Average", "#DC143C")  # Crimson
+        badge = ("Below Average", "#DC143C")
 
-    # Show Average Z-score and badge below chart
+    # Show score + badge
     st.markdown(
         f"<div style='text-align:center; margin-top: 20px;'>"
         f"<span style='font-size:24px; font-weight:bold;'>Average Z Score – {avg_z:.2f}</span><br>"
@@ -109,8 +109,8 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-    metric_cols = df.columns[9:]  # assuming metrics start from column J
-    metrics_df = df[metric_cols]
+    metric_cols = df.columns[9:]
+    metrics_df = df[metric_cols].fillna(0)
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
     plot_data = pd.concat([
@@ -119,7 +119,7 @@ if uploaded_file:
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
 
-    # Define metric groups and colors
+    # Metric groups
     metric_groups = {
         'Successful defensive actions per 90': 'Off The Ball',
         'Aerial duels per 90': 'Off The Ball',
@@ -141,6 +141,18 @@ if uploaded_file:
         'Possession': 'seagreen'
     }
 
+    # --- Player Z Score Table ---
+    selected_metrics = list(metric_groups.keys())
+    percentile_cols = [m + ' (percentile)' for m in selected_metrics]
+    z_df = plot_data[['Player'] + percentile_cols].copy()
+    z_df[percentile_cols] = z_df[percentile_cols].fillna(0)
+    z_df['Z Score'] = z_df[percentile_cols].apply(lambda row: ((row - 50) / 15).mean(), axis=1)
+    z_df_sorted = z_df[['Player', 'Z Score']].sort_values(by='Z Score', ascending=False).reset_index(drop=True)
+
+    st.subheader("📊 Player Z Score Rankings")
+    st.dataframe(z_df_sorted)
+
+    # --- Dropdown and Radar ---
     players = plot_data['Player'].dropna().unique().tolist()
     selected_player = st.selectbox("Choose a player", players)
 
