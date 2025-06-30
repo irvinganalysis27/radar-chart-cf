@@ -44,12 +44,12 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
            color=colors, edgecolor=colors, alpha=0.75)
 
-    # Raw numbers (fixed halfway)
+    # Raw numbers
     for i, (angle, raw_val) in enumerate(zip(angles, raw)):
         ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
                 color='black', fontsize=10, fontweight='bold', rotation=0)
 
-    # Labels
+    # Metric labels
     for i, angle in enumerate(angles):
         label = selected_metrics[i]
         label = label.replace(' per 90', '').replace('Goal conversion, %', 'Conversion (%)')
@@ -78,10 +78,9 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     line2 = f"{team}"
     ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
-    # --- Average Z-score Calculation ---
+    # Z Score & Badge
     z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
-
     if avg_z >= 1.0:
         badge = ("Excellent", "#228B22")
     elif avg_z >= 0.3:
@@ -107,17 +106,36 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-    metric_cols = df.columns[9:]
+
+    # Only keep the exact metrics you want
+    metric_cols = [
+        'Successful defensive actions per 90',
+        'Aerial duels per 90',
+        'Aerial duels won, %',
+        'Non-penalty goals per 90',
+        'xG per 90',
+        'Shots per 90',
+        'Shots on target, %',
+        'Goal conversion, %',
+        'Assists per 90',
+        'xA per 90',
+        'Shot assists per 90',
+        'Offensive duels per 90',
+        'Offensive duels won, %'
+    ]
+    metric_cols = [col for col in metric_cols if col in df.columns]
+
     metrics_df = df[metric_cols].fillna(0)
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
+
     plot_data = pd.concat([
         df[['Player', 'Team', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
 
-    # Metric groups
+    # Grouping and colors
     metric_groups = {
         'Successful defensive actions per 90': 'Off The Ball',
         'Aerial duels per 90': 'Off The Ball',
@@ -139,11 +157,9 @@ if uploaded_file:
         'Possession': 'seagreen'
     }
 
-    # --- Player Z Score Table ---
-    selected_metrics = list(metric_groups.keys())
-    percentile_cols = [m + ' (percentile)' for m in selected_metrics]
+    # Z Score Rankings Table
+    percentile_cols = [m + ' (percentile)' for m in metric_cols]
     z_df = plot_data[['Player', 'Team'] + percentile_cols].copy()
-    z_df[percentile_cols] = z_df[percentile_cols].fillna(0)
     z_df['Z Score'] = z_df[percentile_cols].apply(lambda row: ((row - 50) / 15).mean(), axis=1)
     z_df_sorted = z_df[['Player', 'Team', 'Z Score']].sort_values(by='Z Score', ascending=False).reset_index(drop=True)
 
