@@ -47,7 +47,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
                 color='black', fontsize=10, fontweight='bold', rotation=0)
 
-    # Metric labels
+    # Labels
     for i, angle in enumerate(angles):
         label = selected_metrics[i]
         label = label.replace(' per 90', '').replace('Goal conversion, %', 'Conversion (%)')
@@ -57,7 +57,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(angle, 108, label, ha='center', va='center', rotation=0,
                 color='black', fontsize=10, fontweight='bold')
 
-    # Group labels
+    # Section headers
     group_positions = {}
     for g, a in zip(groups, angles):
         group_positions.setdefault(g, []).append(a)
@@ -66,7 +66,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(mean_angle, 125, group, ha='center', va='center',
                 fontsize=20, fontweight='bold', color=group_colors[group], rotation=0)
 
-    # Player info title
+    # Title
     age = row['Age'].values[0]
     height = row['Height'].values[0]
     team = row['Team'].values[0]
@@ -138,28 +138,22 @@ if uploaded_file:
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
 
-    # Leaderboard Z-score
+    # Z-score calculation
     selected_metrics = list(metric_groups.keys())
     z_scores = (percentile_df[selected_metrics] - 50) / 15
     plot_data['Average Z Score'] = z_scores.mean(axis=1).round(2)
 
-    leaderboard = plot_data[['Player', 'Team', 'Average Z Score']].sort_values(
-        by='Average Z Score', ascending=False
-    ).reset_index(drop=True)
-
-    st.markdown("### 🏆 Z-Score Leaderboard")
-
-    # Select player from full plot_data (prevents KeyError)
+    # Player select
     player_options = plot_data['Player'].dropna().unique().tolist()
-    selected_player = st.selectbox("Choose a player to view radar chart", options=player_options)
-
-    def highlight_selected(row):
-        return ['background-color: #FFF176; font-weight: bold;' if row['Player'] == selected_player else ''] * len(row)
-
-    st.dataframe(
-        leaderboard.style.apply(highlight_selected, axis=1),
-        use_container_width=True
-    )
+    selected_player = st.selectbox("Choose a player", player_options)
 
     if selected_player:
         plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
+
+    # Leaderboard list
+    st.markdown("### 📊 Z-Score Leaderboard")
+    leaderboard = plot_data[['Player', 'Average Z Score']].sort_values(
+        by='Average Z Score', ascending=False
+    ).reset_index(drop=True)
+
+    st.dataframe(leaderboard, use_container_width=True)
