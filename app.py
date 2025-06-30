@@ -82,7 +82,6 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
-    # Badge
     if avg_z >= 1.0:
         badge = ("Excellent", "#228B22")
     elif avg_z >= 0.3:
@@ -92,7 +91,6 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     else:
         badge = ("Below Average", "#DC143C")
 
-    # Show score + badge
     st.markdown(
         f"<div style='text-align:center; margin-top: 20px;'>"
         f"<span style='font-size:24px; font-weight:bold;'>Average Z Score – {avg_z:.2f}</span><br>"
@@ -144,15 +142,14 @@ if uploaded_file:
     # --- Player Z Score Table ---
     selected_metrics = list(metric_groups.keys())
     percentile_cols = [m + ' (percentile)' for m in selected_metrics]
-    z_df = plot_data[['Player'] + percentile_cols].copy()
+    z_df = plot_data[['Player', 'Team'] + percentile_cols].copy()
     z_df[percentile_cols] = z_df[percentile_cols].fillna(0)
     z_df['Z Score'] = z_df[percentile_cols].apply(lambda row: ((row - 50) / 15).mean(), axis=1)
-    z_df_sorted = z_df[['Player', 'Z Score']].sort_values(by='Z Score', ascending=False).reset_index(drop=True)
+    z_df_sorted = z_df[['Player', 'Team', 'Z Score']].sort_values(by='Z Score', ascending=False).reset_index(drop=True)
 
     st.subheader("📊 Player Z Score Rankings")
     st.dataframe(z_df_sorted)
 
-    # --- Dropdown and Radar ---
     players = plot_data['Player'].dropna().unique().tolist()
     selected_player = st.selectbox("Choose a player", players)
 
