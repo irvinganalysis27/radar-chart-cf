@@ -3,6 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+# --- Basic password protection ---
+PASSWORD = "cowboy"
+
+st.title("⚽ Radar Chart Explorer")
+
+# Ask for password
+pwd = st.text_input("Enter password:", type="password")
+if pwd != PASSWORD:
+    st.warning("Please enter the correct password to access the app.")
+    st.stop()
 # --- Define your radar chart function ---
 def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
     row = plot_data[plot_data['Player'] == player_name]
