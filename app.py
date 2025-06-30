@@ -13,7 +13,8 @@ pwd = st.text_input("Enter password:", type="password")
 if pwd != PASSWORD:
     st.warning("Please enter the correct password to access the app.")
     st.stop()
-# --- Define your radar chart function ---
+
+# --- Radar Chart Function ---
 def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
     row = plot_data[plot_data['Player'] == player_name]
     if row.empty:
@@ -77,16 +78,38 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     line2 = f"{team}"
     ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
+    # --- Average Z-score Calculation ---
+    z_scores = (percentiles - 50) / 15  # Z-score approx.
+    avg_z = np.mean(z_scores)
+
+    # Badge color and label
+    if avg_z >= 1.0:
+        badge = ("Excellent", "#228B22")  # Green
+    elif avg_z >= 0.3:
+        badge = ("Good", "#1E90FF")  # Blue
+    elif avg_z >= -0.3:
+        badge = ("Average", "#DAA520")  # Goldenrod
+    else:
+        badge = ("Below Average", "#DC143C")  # Crimson
+
+    # Show Average Z-score and badge below chart
+    st.markdown(
+        f"<div style='text-align:center; margin-top: 20px;'>"
+        f"<span style='font-size:24px; font-weight:bold;'>Average Z Score – {avg_z:.2f}</span><br>"
+        f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>"
+        f"{badge[0]}"
+        f"</span></div>",
+        unsafe_allow_html=True
+    )
+
     st.pyplot(fig)
 
 # --- Streamlit Interface ---
-st.title("⚽ Radar Chart Explorer")
-
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-    metric_cols = df.columns[9:]
+    metric_cols = df.columns[9:]  # assuming metrics start from column J
     metrics_df = df[metric_cols]
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
