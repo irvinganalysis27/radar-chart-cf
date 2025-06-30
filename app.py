@@ -4,11 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --- Basic password protection ---
-PASSWORD = "cowboy"
-
+PASSWORD = "yourpassword123"
 st.title("⚽ Radar Chart Explorer")
 
-# Ask for password
 pwd = st.text_input("Enter password:", type="password")
 if pwd != PASSWORD:
     st.warning("Please enter the correct password to access the app.")
@@ -44,12 +42,12 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     bars = ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
                   color=colors, edgecolor=colors, alpha=0.75)
 
-    # Raw numbers (fixed halfway)
+    # Raw numbers
     for i, (angle, raw_val) in enumerate(zip(angles, raw)):
         ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
                 color='black', fontsize=10, fontweight='bold', rotation=0)
 
-    # Labels
+    # Metric labels
     for i, angle in enumerate(angles):
         label = selected_metrics[i]
         label = label.replace(' per 90', '').replace('Goal conversion, %', 'Conversion (%)')
@@ -59,7 +57,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(angle, 108, label, ha='center', va='center', rotation=0,
                 color='black', fontsize=10, fontweight='bold')
 
-    # Section headers
+    # Group labels
     group_positions = {}
     for g, a in zip(groups, angles):
         group_positions.setdefault(g, []).append(a)
@@ -68,7 +66,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(mean_angle, 125, group, ha='center', va='center',
                 fontsize=20, fontweight='bold', color=group_colors[group], rotation=0)
 
-    # Title
+    # Player info title
     age = row['Age'].values[0]
     height = row['Height'].values[0]
     team = row['Team'].values[0]
@@ -78,21 +76,19 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     line2 = f"{team}"
     ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
-    # --- Average Z-score Calculation ---
-    z_scores = (percentiles - 50) / 15  # Z-score approx.
+    # Z-score and badge
+    z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
-    # Badge color and label
     if avg_z >= 1.0:
-        badge = ("Excellent", "#228B22")  # Green
+        badge = ("Excellent", "#228B22")
     elif avg_z >= 0.3:
-        badge = ("Good", "#1E90FF")  # Blue
+        badge = ("Good", "#1E90FF")
     elif avg_z >= -0.3:
-        badge = ("Average", "#DAA520")  # Goldenrod
+        badge = ("Average", "#DAA520")
     else:
-        badge = ("Below Average", "#DC143C")  # Crimson
+        badge = ("Below Average", "#DC143C")
 
-    # Show Average Z-score and badge below chart
     st.markdown(
         f"<div style='text-align:center; margin-top: 20px;'>"
         f"<span style='font-size:24px; font-weight:bold;'>Average Z Score – {avg_z:.2f}</span><br>"
@@ -104,22 +100,17 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
 
     st.pyplot(fig)
 
-# --- Streamlit Interface ---
+# --- Upload Interface ---
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-    metric_cols = df.columns[9:]  # assuming metrics start from column J
+    metric_cols = df.columns[9:]
     metrics_df = df[metric_cols]
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
-    plot_data = pd.concat([
-        df[['Player', 'Team', 'Age', 'Height']],
-        metrics_df,
-        percentile_df.add_suffix(' (percentile)')
-    ], axis=1)
 
-    # Define metric groups and colors
+    # Define groupings
     metric_groups = {
         'Successful defensive actions per 90': 'Off The Ball',
         'Aerial duels per 90': 'Off The Ball',
@@ -141,8 +132,35 @@ if uploaded_file:
         'Possession': 'seagreen'
     }
 
-    players = plot_data['Player'].dropna().unique().tolist()
-    selected_player = st.selectbox("Choose a player", players)
+    plot_data = pd.concat([
+        df[['Player', 'Team', 'Age', 'Height']],
+        metrics_df,
+        percentile_df.add_suffix(' (percentile)')
+    ], axis=1)
+
+    # --- Leaderboard: average z-score ---
+    selected_metrics = list(metric_groups.keys())
+    z_scores = (percentile_df[selected_metrics] - 50) / 15
+    plot_data['Average Z Score'] = z_scores.mean(axis=1).round(2)
+
+    leaderboard = plot_data[['Player', 'Team', 'Average Z Score']].sort_values(
+        by='Average Z Score', ascending=False
+    ).reset_index(drop=True)
+
+    st.markdown("### 🏆 Z-Score Leaderboard")
+    selected_player = st.selectbox(
+        "Choose a player to view radar chart",
+        options=leaderboard['Player'].tolist()
+    )
+
+    def highlight_selected(row):
+        color = 'background-color: #FFF176; font-weight: bold;' if row['Player'] == selected_player else ''
+        return [color] * len(row)
+
+    st.dataframe(
+        leaderboard.style.apply(highlight_selected, axis=1),
+        use_container_width=True
+    )
 
     if selected_player:
         plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
