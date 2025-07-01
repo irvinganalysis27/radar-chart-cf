@@ -88,6 +88,22 @@ position_metrics = {
             "Passes to final third per 90": "Possession",
             "Accurate passes to final third, %": "Possession"
         }
+    },
+    "Penalty Box CB": {
+        "metrics": ['Defensive duels per 90', 'Defensive duels won, %', 'Aerial duels per 90',
+                    'Aerial duels won, %', 'Shots blocked per 90', 'PAdj Interceptions',
+                    'Head goals per 90', 'Successful dribbles, %', 'Accurate passes, %'],
+        "groups": {
+            'Defensive duels per 90': 'Defensive',
+            'Defensive duels won, %': 'Defensive',
+            'Aerial duels per 90': 'Defensive',
+            'Aerial duels won, %': 'Defensive',
+            'Shots blocked per 90': 'Defensive',
+            'PAdj Interceptions': 'Defensive',
+            'Head goals per 90': 'Possession',
+            'Successful dribbles, %': 'Possession',
+            'Accurate passes, %': 'Possession'
+        }
     }
 }
 
