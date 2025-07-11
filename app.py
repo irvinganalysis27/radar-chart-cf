@@ -251,6 +251,12 @@ if uploaded_file:
     selected_metrics = list(metric_groups.keys())
     percentiles_all = plot_data[[m + ' (percentile)' for m in selected_metrics]]
     z_scores_all = (percentiles_all - 50) / 15
-    plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
+
+    if selected_position == "Penalty Box CB":
+        weights = np.array([1.5 if metric_groups[m] == "Defensive" else 1.0 for m in selected_metrics])
+        weighted_z = z_scores_all * weights
+        plot_data['Avg Z Score'] = weighted_z.sum(axis=1) / weights.sum()
+     else:
+        plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
     z_ranking = plot_data[['Player', 'Team', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
     st.dataframe(z_ranking.reset_index(drop=True))
