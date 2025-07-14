@@ -15,33 +15,12 @@ if pwd != PASSWORD:
 
 # --- Metric Sets for Positions ---
 position_metrics = {
-    "Centre Forward (CF)": {
-        "metrics": [
-            "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
-            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
-            "Offensive duels per 90", "Offensive duels won, %"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Off The Ball",
-            "Aerial duels per 90": "Off The Ball",
-            "Aerial duels won, %": "Off The Ball",
-            "Non-penalty goals per 90": "Attacking",
-            "xG per 90": "Attacking",
-            "Shots per 90": "Attacking",
-            "Shots on target, %": "Attacking",
-            "Goal conversion, %": "Attacking",
-            "Assists per 90": "Attacking",
-            "xA per 90": "Attacking",
-            "Shot assists per 90": "Attacking",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession"
-        }
-    },
     "Penalty Box CB": {
-        "metrics": ['Defensive duels per 90', 'Defensive duels won, %', 'Aerial duels per 90',
-                    'Aerial duels won, %', 'Shots blocked per 90', 'PAdj Interceptions',
-                    'Head goals per 90', 'Successful dribbles, %', 'Accurate passes, %'],
+        "metrics": [
+            'Defensive duels per 90', 'Defensive duels won, %', 'Aerial duels per 90',
+            'Aerial duels won, %', 'Shots blocked per 90', 'PAdj Interceptions',
+            'Head goals per 90', 'Successful dribbles, %', 'Accurate passes, %'
+        ],
         "groups": {
             'Defensive duels per 90': 'Defensive',
             'Defensive duels won, %': 'Defensive',
@@ -75,33 +54,35 @@ if uploaded_file:
     metrics_df = df[metrics]
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
-    z_scores_df = (percentile_df - 50) / 15
+    z_df = (percentile_df - 50) / 15
+    z_df = z_df.round(2)
 
+    # Combine
     plot_data = pd.concat([
         df[['Player', 'Team', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)'),
-        z_scores_df.add_suffix(' (z)')
+        z_df.add_suffix(' (z)')
     ], axis=1)
-
-    use_z_score = st.toggle("Show Z-Scores Instead of Percentiles", value=False)
 
     players = plot_data['Player'].dropna().unique().tolist()
     selected_player = st.selectbox("Choose a player", players)
+    view_option = st.radio("Choose data display", ["Percentile", "Z-Score"])
 
     def plot_radial(player_name, plot_data, metric_groups, group_colors, use_z_score=False):
         row = plot_data[plot_data['Player'] == player_name]
         selected_metrics = list(metric_groups.keys())
 
         if use_z_score:
-            values = row[[m + ' (z)' for m in selected_metrics]].values.flatten() * 15 + 50
+            values = row[[m + ' (z)' for m in selected_metrics]].values.flatten()
+            y_limit = (-3, 3)
         else:
             values = row[[m + ' (percentile)' for m in selected_metrics]].values.flatten()
+            y_limit = (0, 100)
 
         raw = row[selected_metrics].values.flatten()
         groups = [metric_groups[m] for m in selected_metrics]
         colors = [group_colors[g] for g in groups]
-
         angles = np.linspace(0, 2 * np.pi, len(selected_metrics), endpoint=False)
 
         fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
@@ -109,20 +90,21 @@ if uploaded_file:
         ax.set_facecolor('white')
         ax.set_theta_offset(np.pi / 2)
         ax.set_theta_direction(-1)
-        ax.set_ylim(0, 100)
+        ax.set_ylim(*y_limit)
         ax.set_yticklabels([])
         ax.set_xticks([])
         ax.spines['polar'].set_visible(False)
 
-        ax.bar(angles, values, width=2*np.pi/len(selected_metrics)*0.9, color=colors, alpha=0.75, edgecolor=colors)
+        ax.bar(angles, values, width=2 * np.pi / len(selected_metrics) * 0.9,
+               color=colors, edgecolor=colors, alpha=0.75)
 
         for i, (angle, raw_val) in enumerate(zip(angles, raw)):
-            ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
-                    color='black', fontsize=10, fontweight='bold')
+            ax.text(angle, (y_limit[1] + y_limit[0]) / 2, f'{raw_val:.2f}',
+                    ha='center', va='center', color='black', fontsize=10, fontweight='bold')
 
         for i, angle in enumerate(angles):
             label = selected_metrics[i].replace(' per 90', '').replace(', %', ' (%)')
-            ax.text(angle, 108, label, ha='center', va='center',
+            ax.text(angle, y_limit[1] + 5, label, ha='center', va='center',
                     color='black', fontsize=10, fontweight='bold')
 
         group_positions = {}
@@ -130,7 +112,7 @@ if uploaded_file:
             group_positions.setdefault(g, []).append(a)
         for group, group_angles in group_positions.items():
             mean_angle = np.mean(group_angles)
-            ax.text(mean_angle, 125, group, ha='center', va='center',
+            ax.text(mean_angle, y_limit[1] + 20, group, ha='center', va='center',
                     fontsize=20, fontweight='bold', color=group_colors[group])
 
         age = row['Age'].values[0]
@@ -159,11 +141,13 @@ if uploaded_file:
             f"</span></div>",
             unsafe_allow_html=True
         )
+
         st.pyplot(fig)
 
     if selected_player:
-        plot_radial(selected_player, plot_data, metric_groups, group_colors, use_z_score=use_z_score)
+        plot_radial(selected_player, plot_data, metric_groups, group_colors, use_z_score=(view_option == "Z-Score"))
 
+    # Table
     st.markdown("### Players Ranked by Z-Score")
     selected_metrics = list(metric_groups.keys())
     z_scores_all = plot_data[[m + ' (z)' for m in selected_metrics]]
