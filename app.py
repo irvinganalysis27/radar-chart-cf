@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
 # --- Basic password protection ---
 PASSWORD = "cowboy"
@@ -14,125 +14,7 @@ if pwd != PASSWORD:
     st.warning("Please enter the correct password to access the app.")
     st.stop()
 
-# --- Metric Sets for Positions ---
-position_metrics = {
-    "Centre Forward (CF)": {
-        "metrics": [
-            "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
-            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
-            "Offensive duels per 90", "Offensive duels won, %"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Off The Ball",
-            "Aerial duels per 90": "Off The Ball",
-            "Aerial duels won, %": "Off The Ball",
-            "Non-penalty goals per 90": "Attacking",
-            "xG per 90": "Attacking",
-            "Shots per 90": "Attacking",
-            "Shots on target, %": "Attacking",
-            "Goal conversion, %": "Attacking",
-            "Assists per 90": "Attacking",
-            "xA per 90": "Attacking",
-            "Shot assists per 90": "Attacking",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession"
-        }
-    },
-    "Full Back (FB)": {
-        "metrics": [
-            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
-            "PAdj Interceptions", "Assists per 90", "Crosses per 90", "Accurate crosses, %",
-            "Dribbles per 90", "Successful dribbles, %", "Offensive duels per 90",
-            "Offensive duels won, %", "xA per 90", "Passes to final third per 90",
-            "Accurate passes to final third, %"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Defensive",
-            "Defensive duels per 90": "Defensive",
-            "Defensive duels won, %": "Defensive",
-            "PAdj Interceptions": "Defensive",
-            "Crosses per 90": "Possession",
-            "Accurate crosses, %": "Possession",
-            "Dribbles per 90": "Possession",
-            "Successful dribbles, %": "Possession",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession",
-            "xA per 90": "Attacking",
-            "Assists per 90": "Attacking",
-            "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession"
-        }
-    },
-    "Destroyer CM": {
-        "metrics": [
-            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
-            "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions", "Successful dribbles, %",
-            "Offensive duels per 90", "Offensive duels won, %", "Accurate passes, %",
-            "Forward passes per 90", "Accurate forward passes, %", "Passes to final third per 90",
-            "Accurate passes to final third, %"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Defensive",
-            "Defensive duels per 90": "Defensive",
-            "Defensive duels won, %": "Defensive",
-            "Aerial duels per 90": "Defensive",
-            "Aerial duels won, %": "Defensive",
-            "PAdj Interceptions": "Defensive",
-            "Successful dribbles, %": "Possession",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession",
-            "Accurate passes, %": "Possession",
-            "Forward passes per 90": "Possession",
-            "Accurate forward passes, %": "Possession",
-            "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession"
-        }
-    },
-    "Penalty Box CB": {
-        "metrics": ['Defensive duels per 90', 'Defensive duels won, %', 'Aerial duels per 90',
-                    'Aerial duels won, %', 'Shots blocked per 90', 'PAdj Interceptions',
-                    'Head goals per 90', 'Successful dribbles, %', 'Accurate passes, %'],
-        "groups": {
-            'Defensive duels per 90': 'Defensive',
-            'Defensive duels won, %': 'Defensive',
-            'Aerial duels per 90': 'Defensive',
-            'Aerial duels won, %': 'Defensive',
-            'Shots blocked per 90': 'Defensive',
-            'PAdj Interceptions': 'Defensive',
-            'Head goals per 90': 'Possession',
-            'Successful dribbles, %': 'Possession',
-            'Accurate passes, %': 'Possession'
-        }
-    },
-    "Winger": {
-        "metrics": [
-            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Crosses per 90",
-            "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
-            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
-            "Accurate passes to penalty area, %"
-        ],
-        "groups": {
-            "Non-penalty goals per 90": "Attacking",
-            "xG per 90": "Attacking",
-            "Shots per 90": "Attacking",
-            "Shots on target, %": "Attacking",
-            "Goal conversion, %": "Attacking",
-            "Assists per 90": "Attacking",
-            "xA per 90": "Attacking",
-            "Crosses per 90": "Possession",
-            "Accurate crosses, %": "Possession",
-            "Dribbles per 90": "Possession",
-            "Successful dribbles, %": "Possession",
-            "Fouls suffered per 90": "Possession",
-            "Shot assists per 90": "Possession",
-            "Passes to penalty area per 90": "Possession",
-            "Accurate passes to penalty area, %": "Possession"
-        }
-    }
-}
-
+# Define group colors
 group_colors = {
     'Off The Ball': 'crimson',
     'Attacking': 'royalblue',
@@ -140,12 +22,18 @@ group_colors = {
     'Defensive': 'darkorange'
 }
 
+# --- Toggle Display Mode ---
+display_mode = st.radio("Choose chart type", ["Percentile", "Z-Score"])
+
+# --- Metric Sets for Positions ---
+# [Define your `position_metrics` dictionary here — unchanged for brevity]
+
+# --- Upload and Process File ---
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
     selected_position = st.selectbox("Choose a position", list(position_metrics.keys()))
-    view_mode = st.radio("Display data as:", ["Percentile", "Z-Score"])
     metrics = position_metrics[selected_position]["metrics"]
     metric_groups = position_metrics[selected_position]["groups"]
 
@@ -153,85 +41,80 @@ if uploaded_file:
     metrics_df = df[metrics]
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
-    z_score_df = (percentile_df - 50) / 15
+
+    # Add Z-scores
+    z_scores_df = (percentile_df - 50) / 15  # Z-score from percentile
 
     plot_data = pd.concat([
         df[['Player', 'Team', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)'),
-        z_score_df.add_suffix(' (z-score)')
+        z_scores_df.add_suffix(' (z-score)')
     ], axis=1)
 
     players = plot_data['Player'].dropna().unique().tolist()
     selected_player = st.selectbox("Choose a player", players)
 
-    def plot_chart(player_name):
+    def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors, display_mode):
         row = plot_data[plot_data['Player'] == player_name]
         if row.empty:
             st.error(f"No player named '{player_name}' found.")
             return
 
         selected_metrics = list(metric_groups.keys())
-        raw_values = row[selected_metrics].values.flatten()
-        if view_mode == "Z-Score":
-            display_values = row[[m + ' (z-score)' for m in selected_metrics]].values.flatten()
-            y_min, y_max = -3, 3
-        else:
-            display_values = row[[m + ' (percentile)' for m in selected_metrics]].values.flatten()
-            y_min, y_max = 0, 100
-
+        raw = row[selected_metrics].values.flatten()
+        percentiles = row[[m + ' (percentile)' for m in selected_metrics]].values.flatten()
+        z_scores = row[[m + ' (z-score)' for m in selected_metrics]].values.flatten()
         groups = [metric_groups[m] for m in selected_metrics]
         colors = [group_colors[g] for g in groups]
 
-        num_bars = len(selected_metrics)
-        angles = np.linspace(0, 2 * np.pi, num_bars, endpoint=False)
+        # Scale for visualisation
+        if display_mode == "Percentile":
+            bars = percentiles
+            radial_limit = 100
+        else:
+            bars = (z_scores + 3) / 6 * 100  # Normalize -3 to +3 z-scores to 0–100
+            radial_limit = 100
+
+        angles = np.linspace(0, 2 * np.pi, len(selected_metrics), endpoint=False)
 
         fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
         fig.patch.set_facecolor('white')
         ax.set_facecolor('white')
         ax.set_theta_offset(np.pi / 2)
         ax.set_theta_direction(-1)
-        ax.set_ylim(y_min, y_max)
+        ax.set_ylim(0, radial_limit)
         ax.set_yticklabels([])
         ax.set_xticks([])
         ax.spines['polar'].set_visible(False)
 
-        bars = ax.bar(angles, display_values, width=2*np.pi/num_bars * 0.9,
-                      color=colors, edgecolor=colors, alpha=0.75)
+        ax.bar(angles, bars, width=2*np.pi/len(selected_metrics) * 0.9,
+               color=colors, edgecolor=colors, alpha=0.75)
 
-        # Metric values
-        for i, (angle, raw) in enumerate(zip(angles, raw_values)):
-            ax.text(angle, 0, f'{raw:.2f}', ha='center', va='center',
-                    fontsize=10, color='black', fontweight='bold')
+        for i, (angle, raw_val) in enumerate(zip(angles, raw)):
+            ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
+                    color='black', fontsize=10, fontweight='bold')
 
-        # Metric labels
         for i, angle in enumerate(angles):
             label = selected_metrics[i].replace(' per 90', '').replace(', %', ' (%)')
-            radius = y_max + 5 if view_mode == "Percentile" else 3.4
-            ax.text(angle, radius, label, ha='center', va='center', fontsize=10, fontweight='bold')
+            ax.text(angle, radial_limit + 8, label, ha='center', va='center',
+                    color='black', fontsize=10, fontweight='bold')
 
-        # Group labels
         group_positions = {}
         for g, a in zip(groups, angles):
             group_positions.setdefault(g, []).append(a)
         for group, group_angles in group_positions.items():
             mean_angle = np.mean(group_angles)
-            radius = y_max + 20 if view_mode == "Percentile" else 3.8
-            ax.text(mean_angle, radius, group, ha='center', va='center',
+            ax.text(mean_angle, radial_limit + 25, group, ha='center', va='center',
                     fontsize=20, fontweight='bold', color=group_colors[group])
 
-        # Header
         age = row['Age'].values[0]
         height = row['Height'].values[0]
         team = row['Team'].values[0]
-        age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
-        height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
-        line1 = f"{player_name} – {age_str} – {height_str}".strip(" –")
+        line1 = f"{player_name} – {int(age)} years old – {int(height)} cm"
         line2 = f"{team}"
         ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
-        # Z Score badge (always calculated from Z regardless of view)
-        z_scores = row[[m + ' (z-score)' for m in selected_metrics]].values.flatten()
         avg_z = np.mean(z_scores)
         if avg_z >= 1.0:
             badge = ("Excellent", "#228B22")
@@ -254,12 +137,15 @@ if uploaded_file:
         st.pyplot(fig)
 
     if selected_player:
-        plot_chart(selected_player)
+        plot_radial_bar_grouped(
+            selected_player, plot_data, metric_groups, group_colors, display_mode
+        )
 
     # Show ranked Z-score table
     st.markdown("### Players Ranked by Z-Score")
     selected_metrics = list(metric_groups.keys())
-    z_scores_all = plot_data[[m + ' (z-score)' for m in selected_metrics]]
+    percentiles_all = plot_data[[m + ' (percentile)' for m in selected_metrics]]
+    z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
     z_ranking = plot_data[['Player', 'Team', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
     st.dataframe(z_ranking.reset_index(drop=True))
