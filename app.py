@@ -133,9 +133,7 @@ position_metrics = {
     }
 }
 
-# (rest of your app remains unchanged)
-
-# Define group colors
+# Colors
 group_colors = {
     'Off The Ball': 'crimson',
     'Attacking': 'royalblue',
@@ -143,9 +141,8 @@ group_colors = {
     'Defensive': 'darkorange'
 }
 
-# --- Upload and Process File ---
+# File upload
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
-
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
     selected_position = st.selectbox("Choose a position", list(position_metrics.keys()))
@@ -157,8 +154,9 @@ if uploaded_file:
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
 
+    # Note the changed column name here:
     plot_data = pd.concat([
-        df[['Player', 'Team', 'Age', 'Height']],
+        df[['Player', 'Team within selected timeframe', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
@@ -213,7 +211,7 @@ if uploaded_file:
 
         age = row['Age'].values[0]
         height = row['Height'].values[0]
-        team = row['Team'].values[0]
+        team = row['Team within selected timeframe'].values[0]
         age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
         height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
         line1 = f"{player_name} – {age_str} – {height_str}".strip(" –")
@@ -246,11 +244,10 @@ if uploaded_file:
     if selected_player:
         plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
 
-    # Show ranked Z-score table below chart
     st.markdown("### Players Ranked by Z-Score")
     selected_metrics = list(metric_groups.keys())
     percentiles_all = plot_data[[m + ' (percentile)' for m in selected_metrics]]
     z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
-    z_ranking = plot_data[['Player', 'Team', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
+    z_ranking = plot_data[['Player', 'Team within selected timeframe', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
     st.dataframe(z_ranking.reset_index(drop=True))
