@@ -250,4 +250,9 @@ if uploaded_file:
     z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
     z_ranking = plot_data[['Player', 'Team within selected timeframe', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
+    
+    # Modify team column to include "Team – "
+    z_ranking['Team'] = "Team – " + z_ranking['Team within selected timeframe']
+    z_ranking = z_ranking[['Player', 'Team', 'Avg Z Score']]
+
     st.dataframe(z_ranking.reset_index(drop=True))
