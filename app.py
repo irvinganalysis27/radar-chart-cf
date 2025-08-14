@@ -154,9 +154,9 @@ if uploaded_file:
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
 
-    # Note the changed column name here:
+    # Include both team columns
     plot_data = pd.concat([
-        df[['Player', 'Team within selected timeframe', 'Age', 'Height']],
+        df[['Player', 'Team within selected timeframe', 'Team', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
@@ -249,10 +249,14 @@ if uploaded_file:
     percentiles_all = plot_data[[m + ' (percentile)' for m in selected_metrics]]
     z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
-    z_ranking = plot_data[['Player', 'Team within selected timeframe', 'Avg Z Score']].dropna().sort_values(by='Avg Z Score', ascending=False)
-    
-    # Modify team column to include "Team – "
-    z_ranking['Team'] = "Team – " + z_ranking['Team within selected timeframe']
-    z_ranking = z_ranking[['Player', 'Team', 'Avg Z Score']]
 
-    st.dataframe(z_ranking.reset_index(drop=True))
+    # Four columns plus Rank as the first column
+    z_ranking = (
+        plot_data[['Player', 'Team', 'Team within selected timeframe', 'Avg Z Score']]
+        .dropna()
+        .sort_values(by='Avg Z Score', ascending=False)
+    )
+    z_ranking.insert(0, 'Rank', range(1, len(z_ranking) + 1))
+    z_ranking = z_ranking.set_index('Rank')
+
+    st.dataframe(z_ranking)
