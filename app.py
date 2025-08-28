@@ -250,14 +250,17 @@ if uploaded_file:
     z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
 
-    # Keep all players, replace missing teams with N/A, add Rank first
+    # Keep all players, replace missing teams with N/A, add Rank first, include Age
     z_ranking = (
-        plot_data[['Player', 'Team', 'Team within selected timeframe', 'Avg Z Score']]
+        plot_data[['Player', 'Age', 'Team', 'Team within selected timeframe', 'Avg Z Score']]
         .sort_values(by='Avg Z Score', ascending=False)
     )
     z_ranking[['Team', 'Team within selected timeframe']] = (
         z_ranking[['Team', 'Team within selected timeframe']].fillna("N/A")
     )
+    # Ensure Age is integer where not null
+    z_ranking['Age'] = z_ranking['Age'].apply(lambda x: int(x) if pd.notnull(x) else x)
+
     z_ranking.insert(0, 'Rank', range(1, len(z_ranking) + 1))
     z_ranking = z_ranking.set_index('Rank')
 
