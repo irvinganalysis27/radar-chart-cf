@@ -130,6 +130,35 @@ position_metrics = {
             "Passes to penalty area per 90": "Possession",
             "Accurate passes to penalty area, %": "Possession"
         }
+    },
+    # --- New Creative CM (13 metrics) ---
+    "Creative CM": {
+        "metrics": [
+            # Attacking
+            "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
+            "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
+            # Possession
+            "Forward passes per 90", "Accurate forward passes, %",
+            "Through passes per 90", "Accurate through passes, %",
+            "Dribbles per 90", "Successful dribbles, %"
+        ],
+        "groups": {
+            # Attacking
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            # Possession
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Through passes per 90": "Possession",
+            "Accurate through passes, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession"
+        }
     }
 }
 
