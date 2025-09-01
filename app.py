@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import re
 
 # --- Basic password protection ---
 PASSWORD = "cowboy"
@@ -131,19 +132,15 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-    # --- New Creative CM (13 metrics) ---
     "Creative CM": {
         "metrics": [
-            # Attacking
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
             "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
-            # Possession
             "Forward passes per 90", "Accurate forward passes, %",
             "Through passes per 90", "Accurate through passes, %",
             "Dribbles per 90", "Successful dribbles, %"
         ],
         "groups": {
-            # Attacking
             "Non-penalty goals per 90": "Attacking",
             "xG per 90": "Attacking",
             "Goal conversion, %": "Attacking",
@@ -151,7 +148,6 @@ position_metrics = {
             "xA per 90": "Attacking",
             "Shots per 90": "Attacking",
             "Shots on target, %": "Attacking",
-            # Possession
             "Forward passes per 90": "Possession",
             "Accurate forward passes, %": "Possession",
             "Through passes per 90": "Possession",
@@ -174,18 +170,51 @@ group_colors = {
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
+
+    # --- Minutes column detection and filtering ---
+    # Find candidate minutes columns by name
+    minute_name_pattern = re.compile(r'(?:^|[\s_])(min|mins|minute|minutes)(?:s| played)?$', re.IGNORECASE)
+    candidate_minutes = [c for c in df.columns if minute_name_pattern.search(str(c))]
+    # If none found, fall back to any numeric column
+    numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    default_minutes_col = candidate_minutes[0] if candidate_minutes else (numeric_cols[0] if numeric_cols else None)
+
+    minutes_col = st.selectbox(
+        "Select the Minutes column",
+        options=candidate_minutes if candidate_minutes else numeric_cols,
+        index=0 if default_minutes_col else 0,
+        placeholder="Choose a numeric minutes column"
+    )
+
+    min_minutes = st.number_input("Minimum minutes to include", min_value=0, value=1000, step=50)
+
+    # Coerce minutes to numeric and filter
+    df["_minutes_numeric"] = pd.to_numeric(df[minutes_col], errors="coerce")
+    df_filtered = df[df["_minutes_numeric"] >= min_minutes].copy()
+
+    if df_filtered.empty:
+        st.warning("No players meet the minutes threshold. Lower the minimum or pick a different minutes column.")
+        st.stop()
+
+    st.caption(f"Filtering on '{minutes_col}' with threshold {min_minutes}. Players remaining: {len(df_filtered)}")
+
     selected_position = st.selectbox("Choose a position", list(position_metrics.keys()))
     metrics = position_metrics[selected_position]["metrics"]
     metric_groups = position_metrics[selected_position]["groups"]
 
-    df[metrics] = df[metrics].fillna(0)
-    metrics_df = df[metrics]
+    # Ensure all required metric columns exist
+    for m in metrics:
+        if m not in df_filtered.columns:
+            df_filtered[m] = 0
+
+    df_filtered[metrics] = df_filtered[metrics].fillna(0)
+    metrics_df = df_filtered[metrics]
     percentile_df = metrics_df.rank(pct=True) * 100
     percentile_df = percentile_df.round(1)
 
     # Include both team columns
     plot_data = pd.concat([
-        df[['Player', 'Team within selected timeframe', 'Team', 'Age', 'Height']],
+        df_filtered[['Player', 'Team within selected timeframe', 'Team', 'Age', 'Height']],
         metrics_df,
         percentile_df.add_suffix(' (percentile)')
     ], axis=1)
@@ -221,7 +250,7 @@ if uploaded_file:
         bars = ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
                       color=colors, edgecolor=colors, alpha=0.75)
 
-        for i, (angle, raw_val) in enumerate(zip(angles, raw)):
+        for angle, raw_val in zip(angles, raw):
             ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
                     color='black', fontsize=10, fontweight='bold', rotation=0)
 
@@ -243,8 +272,12 @@ if uploaded_file:
         team = row['Team within selected timeframe'].values[0]
         age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
         height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
-        line1 = f"{player_name} – {age_str} – {height_str}".strip(" –")
-        line2 = f"{team}"
+        # Avoid long dashes, use vertical bars
+        parts = [player_name]
+        if age_str: parts.append(age_str)
+        if height_str: parts.append(height_str)
+        line1 = " | ".join(parts)
+        line2 = f"{team}" if pd.notnull(team) else ""
         ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
 
         z_scores = (percentiles - 50) / 15
@@ -261,7 +294,7 @@ if uploaded_file:
 
         st.markdown(
             f"<div style='text-align:center; margin-top: 20px;'>"
-            f"<span style='font-size:24px; font-weight:bold;'>Average Z Score – {avg_z:.2f}</span><br>"
+            f"<span style='font-size:24px; font-weight:bold;'>Average Z Score, {avg_z:.2f}</span><br>"
             f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>"
             f"{badge[0]}"
             f"</span></div>",
@@ -279,7 +312,7 @@ if uploaded_file:
     z_scores_all = (percentiles_all - 50) / 15
     plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
 
-    # Keep all players, replace missing teams with N/A, add Rank first, include Age
+    # Keep all players in filtered set, replace missing teams with N/A, add Rank first, include Age
     z_ranking = (
         plot_data[['Player', 'Age', 'Team', 'Team within selected timeframe', 'Avg Z Score']]
         .sort_values(by='Avg Z Score', ascending=False)
@@ -287,7 +320,6 @@ if uploaded_file:
     z_ranking[['Team', 'Team within selected timeframe']] = (
         z_ranking[['Team', 'Team within selected timeframe']].fillna("N/A")
     )
-    # Ensure Age is integer where not null
     z_ranking['Age'] = z_ranking['Age'].apply(lambda x: int(x) if pd.notnull(x) else x)
 
     z_ranking.insert(0, 'Rank', range(1, len(z_ranking) + 1))
