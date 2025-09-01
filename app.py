@@ -59,10 +59,11 @@ position_metrics = {
             "Successful dribbles, %": "Possession",
             "Offensive duels per 90": "Possession",
             "Offensive duels won, %": "Possession",
-            "xA per 90": "Attacking",
-            "Assists per 90": "Attacking",
             "Passes to final third per 90": "Possession",
             "Accurate passes to final third, %": "Possession"
+            "xA per 90": "Attacking",
+            "Assists per 90": "Attacking"
+
         }
     },
     "Destroyer CM": {
