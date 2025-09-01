@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import re
 
 # --- Basic password protection ---
 PASSWORD = "cowboy"
@@ -42,11 +41,16 @@ position_metrics = {
     },
     "Full Back (FB)": {
         "metrics": [
-            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
-            "PAdj Interceptions", "Assists per 90", "Crosses per 90", "Accurate crosses, %",
-            "Dribbles per 90", "Successful dribbles, %", "Offensive duels per 90",
-            "Offensive duels won, %", "xA per 90", "Passes to final third per 90",
-            "Accurate passes to final third, %"
+            # Defensive
+            "Successful defensive actions per 90", "Defensive duels per 90",
+            "Defensive duels won, %", "PAdj Interceptions",
+            # Possession
+            "Crosses per 90", "Accurate crosses, %", "Dribbles per 90",
+            "Successful dribbles, %", "Offensive duels per 90",
+            "Offensive duels won, %", "Passes to final third per 90",
+            "Accurate passes to final third, %",
+            # Attacking
+            "xA per 90", "Assists per 90"
         ],
         "groups": {
             "Successful defensive actions per 90": "Defensive",
@@ -63,8 +67,6 @@ position_metrics = {
             "Accurate passes to final third, %": "Possession",
             "xA per 90": "Attacking",
             "Assists per 90": "Attacking"
-}
-
         }
     },
     "Destroyer CM": {
@@ -93,19 +95,21 @@ position_metrics = {
         }
     },
     "Penalty Box CB": {
-        "metrics": ['Defensive duels per 90', 'Defensive duels won, %', 'Aerial duels per 90',
-                    'Aerial duels won, %', 'Shots blocked per 90', 'PAdj Interceptions',
-                    'Head goals per 90', 'Successful dribbles, %', 'Accurate passes, %'],
+        "metrics": [
+            "Defensive duels per 90", "Defensive duels won, %", "Aerial duels per 90",
+            "Aerial duels won, %", "Shots blocked per 90", "PAdj Interceptions",
+            "Head goals per 90", "Successful dribbles, %", "Accurate passes, %"
+        ],
         "groups": {
-            'Defensive duels per 90': 'Defensive',
-            'Defensive duels won, %': 'Defensive',
-            'Aerial duels per 90': 'Defensive',
-            'Aerial duels won, %': 'Defensive',
-            'Shots blocked per 90': 'Defensive',
-            'PAdj Interceptions': 'Defensive',
-            'Head goals per 90': 'Possession',
-            'Successful dribbles, %': 'Possession',
-            'Accurate passes, %': 'Possession'
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "Aerial duels per 90": "Defensive",
+            "Aerial duels won, %": "Defensive",
+            "Shots blocked per 90": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Head goals per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Accurate passes, %": "Possession"
         }
     },
     "Winger": {
@@ -162,10 +166,10 @@ position_metrics = {
 
 # Colors
 group_colors = {
-    'Off The Ball': 'crimson',
-    'Attacking': 'royalblue',
-    'Possession': 'seagreen',
-    'Defensive': 'darkorange'
+    "Off The Ball": "crimson",
+    "Attacking": "royalblue",
+    "Possession": "seagreen",
+    "Defensive": "darkorange"
 }
 
 # File upload
@@ -202,23 +206,23 @@ if uploaded_file:
 
     # Include both team columns
     plot_data = pd.concat([
-        df_filtered[['Player', 'Team within selected timeframe', 'Team', 'Age', 'Height']],
+        df_filtered[["Player", "Team within selected timeframe", "Team", "Age", "Height"]],
         metrics_df,
-        percentile_df.add_suffix(' (percentile)')
+        percentile_df.add_suffix(" (percentile)")
     ], axis=1)
 
-    players = plot_data['Player'].dropna().unique().tolist()
+    players = plot_data["Player"].dropna().unique().tolist()
     selected_player = st.selectbox("Choose a player", players)
 
     def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
-        row = plot_data[plot_data['Player'] == player_name]
+        row = plot_data[plot_data["Player"] == player_name]
         if row.empty:
             st.error(f"No player named '{player_name}' found.")
             return
 
         selected_metrics = list(metric_groups.keys())
         raw = row[selected_metrics].values.flatten()
-        percentiles = row[[m + ' (percentile)' for m in selected_metrics]].values.flatten()
+        percentiles = row[[m + " (percentile)" for m in selected_metrics]].values.flatten()
         groups = [metric_groups[m] for m in selected_metrics]
         colors = [group_colors[g] for g in groups]
 
@@ -226,46 +230,48 @@ if uploaded_file:
         angles = np.linspace(0, 2 * np.pi, num_bars, endpoint=False)
 
         fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
-        fig.patch.set_facecolor('white')
-        ax.set_facecolor('white')
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
         ax.set_theta_offset(np.pi / 2)
         ax.set_theta_direction(-1)
         ax.set_ylim(0, 100)
         ax.set_yticklabels([])
         ax.set_xticks([])
-        ax.spines['polar'].set_visible(False)
+        ax.spines["polar"].set_visible(False)
 
-        ax.bar(angles, percentiles, width=2*np.pi/num_bars * 0.9,
+        ax.bar(angles, percentiles, width=2 * np.pi / num_bars * 0.9,
                color=colors, edgecolor=colors, alpha=0.75)
 
         for angle, raw_val in zip(angles, raw):
-            ax.text(angle, 50, f'{raw_val:.2f}', ha='center', va='center',
-                    color='black', fontsize=10, fontweight='bold', rotation=0)
+            ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center",
+                    color="black", fontsize=10, fontweight="bold", rotation=0)
 
         for i, angle in enumerate(angles):
-            label = selected_metrics[i].replace(' per 90', '').replace(', %', ' (%)')
-            ax.text(angle, 108, label, ha='center', va='center', rotation=0,
-                    color='black', fontsize=10, fontweight='bold')
+            label = selected_metrics[i].replace(" per 90", "").replace(", %", " (%)")
+            ax.text(angle, 108, label, ha="center", va="center", rotation=0,
+                    color="black", fontsize=10, fontweight="bold")
 
         group_positions = {}
         for g, a in zip(groups, angles):
             group_positions.setdefault(g, []).append(a)
         for group, group_angles in group_positions.items():
             mean_angle = np.mean(group_angles)
-            ax.text(mean_angle, 125, group, ha='center', va='center',
-                    fontsize=20, fontweight='bold', color=group_colors[group], rotation=0)
+            ax.text(mean_angle, 125, group, ha="center", va="center",
+                    fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
 
-        age = row['Age'].values[0]
-        height = row['Height'].values[0]
-        team = row['Team within selected timeframe'].values[0]
+        age = row["Age"].values[0]
+        height = row["Height"].values[0]
+        team = row["Team within selected timeframe"].values[0]
         age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
         height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
         parts = [player_name]
-        if age_str: parts.append(age_str)
-        if height_str: parts.append(height_str)
+        if age_str:
+            parts.append(age_str)
+        if height_str:
+            parts.append(height_str)
         line1 = " | ".join(parts)
         line2 = f"{team}" if pd.notnull(team) else ""
-        ax.set_title(f"{line1}\n{line2}", color='black', size=22, pad=20, y=1.12)
+        ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
         z_scores = (percentiles - 50) / 15
         avg_z = np.mean(z_scores)
@@ -295,20 +301,20 @@ if uploaded_file:
 
     st.markdown("### Players Ranked by Z-Score")
     selected_metrics = list(metric_groups.keys())
-    percentiles_all = plot_data[[m + ' (percentile)' for m in selected_metrics]]
+    percentiles_all = plot_data[[m + " (percentile)" for m in selected_metrics]]
     z_scores_all = (percentiles_all - 50) / 15
-    plot_data['Avg Z Score'] = z_scores_all.mean(axis=1)
+    plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
 
     z_ranking = (
-        plot_data[['Player', 'Age', 'Team', 'Team within selected timeframe', 'Avg Z Score']]
-        .sort_values(by='Avg Z Score', ascending=False)
+        plot_data[["Player", "Age", "Team", "Team within selected timeframe", "Avg Z Score"]]
+        .sort_values(by="Avg Z Score", ascending=False)
     )
-    z_ranking[['Team', 'Team within selected timeframe']] = (
-        z_ranking[['Team', 'Team within selected timeframe']].fillna("N/A")
+    z_ranking[["Team", "Team within selected timeframe"]] = (
+        z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
     )
-    z_ranking['Age'] = z_ranking['Age'].apply(lambda x: int(x) if pd.notnull(x) else x)
+    z_ranking["Age"] = z_ranking["Age"].apply(lambda x: int(x) if pd.notnull(x) else x)
 
-    z_ranking.insert(0, 'Rank', range(1, len(z_ranking) + 1))
-    z_ranking = z_ranking.set_index('Rank')
+    z_ranking.insert(0, "Rank", range(1, len(z_ranking) + 1))
+    z_ranking = z_ranking.set_index("Rank")
 
     st.dataframe(z_ranking)
