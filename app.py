@@ -60,9 +60,10 @@ position_metrics = {
             "Offensive duels per 90": "Possession",
             "Offensive duels won, %": "Possession",
             "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession"
-            "xA per 90": "Attacking"
+            "Accurate passes to final third, %": "Possession",
+            "xA per 90": "Attacking",
             "Assists per 90": "Attacking"
+}
 
         }
     },
