@@ -76,47 +76,8 @@ def map_first_position_to_group(cell) -> str:
     tok = parse_first_position(cell)
     return RAW_TO_SIX.get(tok, "Wide Midfielder")  # safe default
 
-# ========== Metric sets (added Goalkeeper template) ==========
+# ========== Metric sets ==========
 position_metrics = {
-    "Goalkeeper (GK)": {
-        "metrics": [
-            # Goalkeeping
-            "Clean sheets",
-            "Least conceded goals per 90",
-            "Prevented goals per 90",
-            "Save rate, %",
-            "Shots against per 90",
-            "Aerial duels per 90",
-            "Exits per 90",
-            # Possession
-            "Passes per 90",
-            "Accurate passes, %",
-            "Short / medium passes per 90",
-            "Accurate short / medium passes, %",
-            "Least long passes per 90",
-            "Accurate long passes, %",
-            "Average pass length, m"
-        ],
-        "groups": {
-            # Goalkeeping
-            "Clean sheets": "Goalkeeping",
-            "Least conceded goals per 90": "Goalkeeping",
-            "Prevented goals per 90": "Goalkeeping",
-            "Save rate, %": "Goalkeeping",
-            "Shots against per 90": "Goalkeeping",
-            "Aerial duels per 90": "Goalkeeping",
-            "Exits per 90": "Goalkeeping",
-            # Possession
-            "Passes per 90": "Possession",
-            "Accurate passes, %": "Possession",
-            "Short / medium passes per 90": "Possession",
-            "Accurate short / medium passes, %": "Possession",
-            "Least long passes per 90": "Possession",
-            "Accurate long passes, %": "Possession",
-            "Average pass length, m": "Possession"
-        }
-    },
-
     "Centre Forward (CF)": {
         "metrics": [
             "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
@@ -140,7 +101,6 @@ position_metrics = {
             "Offensive duels won, %": "Possession"
         }
     },
-
     "Full Back (FB)": {
         "metrics": [
             # Defensive
@@ -171,7 +131,6 @@ position_metrics = {
             "Assists per 90": "Attacking"
         }
     },
-
     "Destroyer CM": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
@@ -197,7 +156,6 @@ position_metrics = {
             "Accurate passes to final third, %": "Possession"
         }
     },
-
     "Penalty Box CB": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %", "Aerial duels per 90",
@@ -216,7 +174,6 @@ position_metrics = {
             "Accurate passes, %": "Possession"
         }
     },
-
     "Winger": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
@@ -243,7 +200,6 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-
     "Creative CM": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
@@ -270,20 +226,11 @@ position_metrics = {
     }
 }
 
-# Colors for the radar group labels
 group_colors = {
-    "Goalkeeping": "darkorange",
-    "Defensive": "darkorange",
+    "Off The Ball": "crimson",
     "Attacking": "royalblue",
     "Possession": "seagreen",
-    "Off The Ball": "crimson"
-}
-
-# Metrics where a lower raw value is desirable, invert after percentile
-LOWER_IS_BETTER = {
-    "Least conceded goals per 90",
-    "Shots against per 90",
-    "Least long passes per 90"
+    "Defensive": "darkorange"
 }
 
 # ---------- File upload ----------
@@ -310,7 +257,7 @@ df = df[df["_minutes_numeric"] >= min_minutes].copy()
 if df.empty:
     st.warning("No players meet the minutes threshold. Lower the minimum.")
     st.stop()
-st.caption(f"Showing {len(df)} players with at least {min_minutes} minutes played")
+st.caption(f"Filtering on '{minutes_col}' with threshold {min_minutes}. Players remaining, {len(df)}")
 
 # ---------- 6-group filter with no visible title ----------
 available_groups = [g for g in SIX_GROUPS if g in df["Six-Group Position"].unique()]
@@ -327,11 +274,7 @@ if selected_groups:
         st.stop()
 
 # ---------- Choose template for metrics ----------
-selected_position_template = st.selectbox(
-    "Choose a position template for the chart",
-    list(position_metrics.keys()),
-    index=0  # default to GK if you want, change as needed
-)
+selected_position_template = st.selectbox("Choose a position template for the chart", list(position_metrics.keys()))
 metrics = position_metrics[selected_position_template]["metrics"]
 metric_groups = position_metrics[selected_position_template]["groups"]
 
@@ -341,45 +284,26 @@ for m in metrics:
         df[m] = 0
 df[metrics] = df[metrics].fillna(0)
 
-# Percentiles within filtered set, then invert any lower-is-better metrics
+# Percentiles within filtered set
 metrics_df = df[metrics].copy()
 percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
-for m in metrics:
-    if m in LOWER_IS_BETTER:
-        col = m + " (percentile)"
-        # if rank created above, invert, else create and invert
-        if col in percentile_df.columns:
-            percentile_df[col] = 100.0 - percentile_df[col]
-        else:
-            percentile_df[col] = 100.0 - (metrics_df[m].rank(pct=True) * 100).round(1)
 
 # Data for plotting and table
 keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Positions played", "Minutes played"]
 plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
-# --- Add Avg Z before building the ranking table ---
+# --- Add Avg Z and Rank before the player select ---
 sel_metrics = list(metric_groups.keys())
 percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
 z_scores_all = (percentiles_all - 50) / 15
 plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
-
-# Build ranking table and use index as the rank
-cols_for_table = [
-    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score"
-]
-z_ranking = (plot_data[cols_for_table]
-             .sort_values(by="Avg Z Score", ascending=False)
-             .reset_index(drop=True))
-z_ranking.index = np.arange(1, len(z_ranking) + 1)
-z_ranking.index.name = "Rank"
-
-st.dataframe(z_ranking, use_container_width=True)
+plot_data["Rank"] = plot_data["Avg Z Score"].rank(ascending=False, method="min").astype(int)
 
 # ---------- Player select and chart ----------
 players = plot_data["Player"].dropna().unique().tolist()
 selected_player = st.selectbox("Choose a player", players)
 
-def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors, ranking_table):
+def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
     row = plot_data[plot_data["Player"] == player_name]
     if row.empty:
         st.error(f"No player named '{player_name}' found.")
@@ -429,6 +353,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors,
     height = row["Height"].values[0]
     team = row["Team within selected timeframe"].values[0]
     mins = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
+    rank_val = int(row["Rank"].values[0]) if "Rank" in row else None
 
     age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
     height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
@@ -439,20 +364,13 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors,
 
     team_str = f"{team}" if pd.notnull(team) else ""
     mins_str = f"{int(mins)} mins" if pd.notnull(mins) else ""
-
-    # rank from the ranking table index
-    if player_name in ranking_table["Player"].values:
-        rank_val = ranking_table.index[ranking_table["Player"] == player_name][0]
-        rank_str = f"Rank #{rank_val}"
-    else:
-        rank_str = ""
-
+    rank_str = f"Rank #{rank_val}" if rank_val is not None else ""
     line2_parts = [team_str, mins_str, rank_str]
     line2 = " | ".join([p for p in line2_parts if p])
 
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
-    # Badge based on this player's avg z
+    # Badge based on avg z of this player
     z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
@@ -476,4 +394,24 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors,
     st.pyplot(fig)
 
 if selected_player:
-    plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors, z_ranking)
+    plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
+
+# ---------- Ranking table ----------
+st.markdown("### Players Ranked by Z-Score")
+cols_for_table = [
+    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score", "Rank"
+]
+z_ranking = (plot_data[cols_for_table]
+             .sort_values(by="Avg Z Score", ascending=False)
+             .reset_index(drop=True))
+
+z_ranking[["Team", "Team within selected timeframe"]] = (
+    z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
+)
+if "Age" in z_ranking:
+    z_ranking["Age"] = z_ranking["Age"].apply(lambda x: int(x) if pd.notnull(x) else x)
+
+z_ranking.index = np.arange(1, len(z_ranking) + 1)
+z_ranking.index.name = "Row"
+
+st.dataframe(z_ranking, use_container_width=True)
