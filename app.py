@@ -353,7 +353,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     height = row["Height"].values[0]
     team = row["Team within selected timeframe"].values[0]
     mins = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
-    rank_val = int(row["Rank"].values[0]) if "Rank" in row else None
+    rank_val = z_ranking.index[z_ranking["Player"] == player_name][0] if player_name in z_ranking["Player"].values else None
 
     age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
     height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
