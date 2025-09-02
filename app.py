@@ -7,7 +7,7 @@ import re
 # --- Basic password protection ---
 PASSWORD = "cowboy"
 
-st.title("⚽ Radar Chart Explorer")
+st.title("⚽ Radar Chart and Ranking App")
 
 # Ask for password
 pwd = st.text_input("Enter password:", type="password")
