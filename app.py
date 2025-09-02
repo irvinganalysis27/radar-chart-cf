@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import io
+import re
 
 # --- Basic password protection ---
 PASSWORD = "cowboy"
@@ -14,7 +16,81 @@ if pwd != PASSWORD:
     st.warning("Please enter the correct password to access the app.")
     st.stop()
 
-# --- Metric Sets for Positions ---
+# ========== 6-position mapping ==========
+# Your 6 groups
+SIX_GROUPS = [
+    "Goalkeeper",
+    "Wide Defender",
+    "Central Defender",
+    "Central Midfielder",
+    "Wide Midfielder",
+    "Central Forward"
+]
+
+# Raw tokens that map into the 6 groups.
+# We only use the FIRST listed position per player.
+RAW_TO_SIX = {
+    # Goalkeeper
+    "GK": "Goalkeeper", "GKP": "Goalkeeper", "GOALKEEPER": "Goalkeeper",
+
+    # Wide Defender
+    "RB": "Wide Defender", "LB": "Wide Defender",
+    "RWB": "Wide Defender", "LWB": "Wide Defender", "RFB": "Wide Defender", "LFB": "Wide Defender",
+
+    # Central Defender
+    "CB": "Central Defender", "RCB": "Central Defender", "LCB": "Central Defender",
+    "CBR": "Central Defender", "CBL": "Central Defender", "SW": "Central Defender",
+
+    # Central Midfielder
+    "CMF": "Central Midfielder", "CM": "Central Midfielder",
+    "RCMF": "Central Midfielder", "RCM": "Central Midfielder",
+    "LCMF": "Central Midfielder", "LCM": "Central Midfielder",
+    "DMF": "Central Midfielder", "DM": "Central Midfielder", "CDM": "Central Midfielder",
+    "RDMF": "Central Midfielder", "RDM": "Central Midfielder",
+    "LDMF": "Central Midfielder", "LDM": "Central Midfielder",
+    "AMF": "Central Midfielder", "AM": "Central Midfielder", "CAM": "Central Midfielder", "SS": "Central Midfielder", "10": "Central Midfielder",
+
+    # Wide Midfielder
+    "LWF": "Wide Midfielder", "RWF": "Wide Midfielder",
+    "RW": "Wide Midfielder", "LW": "Wide Midfielder",
+    "LAMF": "Wide Midfielder", "RAMF": "Wide Midfielder",
+    "RM": "Wide Midfielder", "LM": "Wide Midfielder",
+    "WF": "Wide Midfielder", "RWG": "Wide Midfielder", "LWG": "Wide Midfielder", "W": "Wide Midfielder",
+
+    # Central Forward
+    "CF": "Central Forward", "ST": "Central Forward", "9": "Central Forward",
+    "FW": "Central Forward", "STK": "Central Forward", "CFW": "Central Forward"
+}
+
+def _clean_pos_token(tok: str) -> str:
+    if pd.isna(tok):
+        return ""
+    t = str(tok).upper()
+    t = t.replace(".", "").replace("-", "").replace(" ", "")
+    return t
+
+def parse_first_position(cell) -> str:
+    """Get first listed position token from a cell like 'LWF, CF'."""
+    if pd.isna(cell):
+        return ""
+    first = re.split(r"[,/]", str(cell))[0].strip()
+    return _clean_pos_token(first)
+
+def map_first_position_to_group(cell) -> str:
+    tok = parse_first_position(cell)
+    return RAW_TO_SIX.get(tok, "Central Midfielder" if tok in {"RCAM","LCAM"} else
+                          "Wide Midfielder" if tok in {"RWM","LWM"} else
+                          "Central Defender" if tok in {"RCD","LCD"} else
+                          "Goalkeeper" if tok in {"GK1"} else
+                          "Central Forward" if tok in {"STCF"} else
+                          "Wide Defender" if tok in {"RDF","LDF"} else
+                          "Wide Midfielder" if tok.startswith(("R", "L")) and tok.endswith(("W","WF","WM")) else
+                          "Central Midfielder" if tok.endswith(("MF","M")) else
+                          "Central Forward" if tok in {"CF9"} else
+                          "Goalkeeper" if tok == "GK" else
+                          "Wide Midfielder")  # safe default to wide mid if truly unknown
+
+# ========== Metric sets ==========
 position_metrics = {
     "Centre Forward (CF)": {
         "metrics": [
@@ -164,7 +240,6 @@ position_metrics = {
     }
 }
 
-# Colors
 group_colors = {
     "Off The Ball": "crimson",
     "Attacking": "royalblue",
@@ -172,149 +247,177 @@ group_colors = {
     "Defensive": "darkorange"
 }
 
-# File upload
+# ---------- File upload ----------
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+if not uploaded_file:
+    st.stop()
 
-    # --- Minutes filtering, no dropdown ---
-    minutes_col = "Minutes played"  # hard coded
-    min_minutes = st.number_input("Minimum minutes to include", min_value=0, value=1000, step=50)
+df = pd.read_excel(uploaded_file)
 
-    df["_minutes_numeric"] = pd.to_numeric(df[minutes_col], errors="coerce")
-    df_filtered = df[df["_minutes_numeric"] >= min_minutes].copy()
+# ---------- Derive 6-group position from the FIRST listed position ----------
+df["Six-Group Position"] = df["Position"].apply(map_first_position_to_group) if "Position" in df.columns else np.nan
 
-    if df_filtered.empty:
-        st.warning("No players meet the minutes threshold. Lower the minimum.")
+# ---------- Minutes filter ----------
+minutes_col = "Minutes played"  # hard coded
+min_minutes = st.number_input("Minimum minutes to include", min_value=0, value=1000, step=50)
+df["_minutes_numeric"] = pd.to_numeric(df.get(minutes_col, np.nan), errors="coerce")
+df = df[df["_minutes_numeric"] >= min_minutes].copy()
+if df.empty:
+    st.warning("No players meet the minutes threshold. Lower the minimum.")
+    st.stop()
+st.caption(f"Filtering on '{minutes_col}' with threshold {min_minutes}. Players remaining, {len(df)}")
+
+# ---------- Filter by your 6 groups (multi select) ----------
+st.subheader("Filter by 6-position groups")
+available_groups = [g for g in SIX_GROUPS if g in df["Six-Group Position"].unique()]
+selected_groups = st.multiselect("Include groups", options=available_groups, default=[])
+
+if selected_groups:
+    df = df[df["Six-Group Position"].isin(selected_groups)].copy()
+    if df.empty:
+        st.warning("No players after 6-group filter. Clear filters or choose different groups.")
         st.stop()
 
-    st.caption(f"Filtering on '{minutes_col}' with threshold {min_minutes}. Players remaining: {len(df_filtered)}")
+# ---------- Choose template for metrics ----------
+selected_position_template = st.selectbox("Choose a position template for the chart", list(position_metrics.keys()))
+metrics = position_metrics[selected_position_template]["metrics"]
+metric_groups = position_metrics[selected_position_template]["groups"]
 
-    selected_position = st.selectbox("Choose a position", list(position_metrics.keys()))
-    metrics = position_metrics[selected_position]["metrics"]
-    metric_groups = position_metrics[selected_position]["groups"]
+# Ensure metric columns exist
+for m in metrics:
+    if m not in df.columns:
+        df[m] = 0
+df[metrics] = df[metrics].fillna(0)
 
-    # Ensure all required metric columns exist
-    for m in metrics:
-        if m not in df_filtered.columns:
-            df_filtered[m] = 0
+# Percentiles within filtered set
+metrics_df = df[metrics].copy()
+percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
 
-    df_filtered[metrics] = df_filtered[metrics].fillna(0)
-    metrics_df = df_filtered[metrics]
-    percentile_df = metrics_df.rank(pct=True) * 100
-    percentile_df = percentile_df.round(1)
+# Data for plotting and table
+keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Six-Group Position"]
+plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
-    # Include both team columns
-    plot_data = pd.concat([
-        df_filtered[["Player", "Team within selected timeframe", "Team", "Age", "Height"]],
-        metrics_df,
-        percentile_df.add_suffix(" (percentile)")
-    ], axis=1)
+# ---------- Player select and chart ----------
+players = plot_data["Player"].dropna().unique().tolist()
+selected_player = st.selectbox("Choose a player", players)
 
-    players = plot_data["Player"].dropna().unique().tolist()
-    selected_player = st.selectbox("Choose a player", players)
+def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
+    row = plot_data[plot_data["Player"] == player_name]
+    if row.empty:
+        st.error(f"No player named '{player_name}' found.")
+        return
 
-    def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
-        row = plot_data[plot_data["Player"] == player_name]
-        if row.empty:
-            st.error(f"No player named '{player_name}' found.")
-            return
+    sel_metrics = list(metric_groups.keys())
+    raw = row[sel_metrics].values.flatten()
+    percentiles = row[[m + " (percentile)" for m in sel_metrics]].values.flatten()
+    groups = [metric_groups[m] for m in sel_metrics]
+    colors = [group_colors[g] for g in groups]
 
-        selected_metrics = list(metric_groups.keys())
-        raw = row[selected_metrics].values.flatten()
-        percentiles = row[[m + " (percentile)" for m in selected_metrics]].values.flatten()
-        groups = [metric_groups[m] for m in selected_metrics]
-        colors = [group_colors[g] for g in groups]
+    num_bars = len(sel_metrics)
+    angles = np.linspace(0, 2*np.pi, num_bars, endpoint=False)
 
-        num_bars = len(selected_metrics)
-        angles = np.linspace(0, 2 * np.pi, num_bars, endpoint=False)
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    ax.set_theta_offset(np.pi/2)
+    ax.set_theta_direction(-1)
+    ax.set_ylim(0, 100)
+    ax.set_yticklabels([])
+    ax.set_xticks([])
+    ax.spines["polar"].set_visible(False)
 
-        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
-        fig.patch.set_facecolor("white")
-        ax.set_facecolor("white")
-        ax.set_theta_offset(np.pi / 2)
-        ax.set_theta_direction(-1)
-        ax.set_ylim(0, 100)
-        ax.set_yticklabels([])
-        ax.set_xticks([])
-        ax.spines["polar"].set_visible(False)
+    ax.bar(angles, percentiles, width=2*np.pi/num_bars*0.9, color=colors, edgecolor=colors, alpha=0.75)
 
-        ax.bar(angles, percentiles, width=2 * np.pi / num_bars * 0.9,
-               color=colors, edgecolor=colors, alpha=0.75)
+    for angle, raw_val in zip(angles, raw):
+        ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center",
+                color="black", fontsize=10, fontweight="bold", rotation=0)
 
-        for angle, raw_val in zip(angles, raw):
-            ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center",
-                    color="black", fontsize=10, fontweight="bold", rotation=0)
+    for i, angle in enumerate(angles):
+        label = sel_metrics[i].replace(" per 90", "").replace(", %", " (%)")
+        ax.text(angle, 108, label, ha="center", va="center", rotation=0,
+                color="black", fontsize=10, fontweight="bold")
 
-        for i, angle in enumerate(angles):
-            label = selected_metrics[i].replace(" per 90", "").replace(", %", " (%)")
-            ax.text(angle, 108, label, ha="center", va="center", rotation=0,
-                    color="black", fontsize=10, fontweight="bold")
+    # Group labels
+    group_positions = {}
+    for g, a in zip(groups, angles):
+        group_positions.setdefault(g, []).append(a)
+    for group, group_angles in group_positions.items():
+        mean_angle = np.mean(group_angles)
+        ax.text(mean_angle, 125, group, ha="center", va="center",
+                fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
 
-        group_positions = {}
-        for g, a in zip(groups, angles):
-            group_positions.setdefault(g, []).append(a)
-        for group, group_angles in group_positions.items():
-            mean_angle = np.mean(group_angles)
-            ax.text(mean_angle, 125, group, ha="center", va="center",
-                    fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
+    age = row["Age"].values[0]
+    height = row["Height"].values[0]
+    team = row["Team within selected timeframe"].values[0]
+    age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
+    height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
+    parts = [player_name]
+    if age_str: parts.append(age_str)
+    if height_str: parts.append(height_str)
+    line1 = " | ".join(parts)
+    line2 = f"{team}" if pd.notnull(team) else ""
+    ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
-        age = row["Age"].values[0]
-        height = row["Height"].values[0]
-        team = row["Team within selected timeframe"].values[0]
-        age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
-        height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
-        parts = [player_name]
-        if age_str:
-            parts.append(age_str)
-        if height_str:
-            parts.append(height_str)
-        line1 = " | ".join(parts)
-        line2 = f"{team}" if pd.notnull(team) else ""
-        ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
+    z_scores = (percentiles - 50) / 15
+    avg_z = np.mean(z_scores)
 
-        z_scores = (percentiles - 50) / 15
-        avg_z = np.mean(z_scores)
+    if avg_z >= 1.0:
+        badge = ("Excellent", "#228B22")
+    elif avg_z >= 0.3:
+        badge = ("Good", "#1E90FF")
+    elif avg_z >= -0.3:
+        badge = ("Average", "#DAA520")
+    else:
+        badge = ("Below Average", "#DC143C")
 
-        if avg_z >= 1.0:
-            badge = ("Excellent", "#228B22")
-        elif avg_z >= 0.3:
-            badge = ("Good", "#1E90FF")
-        elif avg_z >= -0.3:
-            badge = ("Average", "#DAA520")
-        else:
-            badge = ("Below Average", "#DC143C")
-
-        st.markdown(
-            f"<div style='text-align:center; margin-top: 20px;'>"
-            f"<span style='font-size:24px; font-weight:bold;'>Average Z Score, {avg_z:.2f}</span><br>"
-            f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>"
-            f"{badge[0]}"
-            f"</span></div>",
-            unsafe_allow_html=True
-        )
-
-        st.pyplot(fig)
-
-    if selected_player:
-        plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
-
-    st.markdown("### Players Ranked by Z-Score")
-    selected_metrics = list(metric_groups.keys())
-    percentiles_all = plot_data[[m + " (percentile)" for m in selected_metrics]]
-    z_scores_all = (percentiles_all - 50) / 15
-    plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
-
-    z_ranking = (
-        plot_data[["Player", "Age", "Team", "Team within selected timeframe", "Avg Z Score"]]
-        .sort_values(by="Avg Z Score", ascending=False)
+    st.markdown(
+        f"<div style='text-align:center; margin-top: 20px;'>"
+        f"<span style='font-size:24px; font-weight:bold;'>Average Z Score, {avg_z:.2f}</span><br>"
+        f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>"
+        f"{badge[0]}</span></div>",
+        unsafe_allow_html=True
     )
-    z_ranking[["Team", "Team within selected timeframe"]] = (
-        z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
-    )
+
+    st.pyplot(fig)
+
+if selected_player:
+    plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
+
+# ---------- Ranking table and downloads ----------
+st.markdown("### Players Ranked by Z-Score")
+sel_metrics = list(metric_groups.keys())
+percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
+z_scores_all = (percentiles_all - 50) / 15
+plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
+
+cols_for_table = [
+    "Player", "Six-Group Position", "Age", "Team", "Team within selected timeframe", "Avg Z Score"
+]
+z_ranking = (plot_data[cols_for_table]
+             .sort_values(by="Avg Z Score", ascending=False)
+             .reset_index(drop=True))
+
+z_ranking[["Team", "Team within selected timeframe"]] = (
+    z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
+)
+if "Age" in z_ranking:
     z_ranking["Age"] = z_ranking["Age"].apply(lambda x: int(x) if pd.notnull(x) else x)
 
-    z_ranking.insert(0, "Rank", range(1, len(z_ranking) + 1))
-    z_ranking = z_ranking.set_index("Rank")
+z_ranking.index = np.arange(1, len(z_ranking) + 1)
+z_ranking.index.name = "Rank"
 
-    st.dataframe(z_ranking)
+st.dataframe(z_ranking, use_container_width=True)
+
+st.markdown("#### Download filtered table")
+csv_bytes = z_ranking.to_csv().encode("utf-8")
+st.download_button("Download CSV", data=csv_bytes, file_name="players_filtered_ranked.csv", mime="text/csv")
+
+output = io.BytesIO()
+with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+    z_ranking.to_excel(writer, sheet_name="Ranking")
+st.download_button(
+    "Download Excel",
+    data=output.getvalue(),
+    file_name="players_filtered_ranked.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
