@@ -241,7 +241,6 @@ if not uploaded_file:
 df = pd.read_excel(uploaded_file)
 
 # ---------- Positions ----------
-# Keep the raw full list for the table
 if "Position" in df.columns:
     df["Positions played"] = df["Position"].astype(str)
 else:
@@ -266,7 +265,7 @@ selected_groups = st.multiselect(
     "Include groups",
     options=available_groups,
     default=[],
-    label_visibility="collapsed"  # hides the label
+    label_visibility="collapsed"
 )
 if selected_groups:
     df = df[df["Six-Group Position"].isin(selected_groups)].copy()
@@ -293,6 +292,13 @@ percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
 keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Positions played", "Minutes played"]
 plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
+# --- Add Avg Z and Rank before the player select ---
+sel_metrics = list(metric_groups.keys())
+percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
+z_scores_all = (percentiles_all - 50) / 15
+plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
+plot_data["Rank"] = plot_data["Avg Z Score"].rank(ascending=False, method="min").astype(int)
+
 # ---------- Player select and chart ----------
 players = plot_data["Player"].dropna().unique().tolist()
 selected_player = st.selectbox("Choose a player", players)
@@ -303,13 +309,13 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         st.error(f"No player named '{player_name}' found.")
         return
 
-    sel_metrics = list(metric_groups.keys())
-    raw = row[sel_metrics].values.flatten()
-    percentiles = row[[m + " (percentile)" for m in sel_metrics]].values.flatten()
-    groups = [metric_groups[m] for m in sel_metrics]
+    sel_metrics_loc = list(metric_groups.keys())
+    raw = row[sel_metrics_loc].values.flatten()
+    percentiles = row[[m + " (percentile)" for m in sel_metrics_loc]].values.flatten()
+    groups = [metric_groups[m] for m in sel_metrics_loc]
     colors = [group_colors[g] for g in groups]
 
-    num_bars = len(sel_metrics)
+    num_bars = len(sel_metrics_loc)
     angles = np.linspace(0, 2*np.pi, num_bars, endpoint=False)
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
@@ -329,7 +335,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
                 color="black", fontsize=10, fontweight="bold", rotation=0)
 
     for i, angle in enumerate(angles):
-        label = sel_metrics[i].replace(" per 90", "").replace(", %", " (%)")
+        label = sel_metrics_loc[i].replace(" per 90", "").replace(", %", " (%)")
         ax.text(angle, 108, label, ha="center", va="center", rotation=0,
                 color="black", fontsize=10, fontweight="bold")
 
@@ -342,11 +348,13 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(mean_angle, 125, group, ha="center", va="center",
                 fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
 
-    # Title lines, add minutes next to team
+    # Title lines, include minutes and rank
     age = row["Age"].values[0]
     height = row["Height"].values[0]
     team = row["Team within selected timeframe"].values[0]
     mins = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
+    rank_val = int(row["Rank"].values[0]) if "Rank" in row else None
+
     age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
     height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
     parts = [player_name]
@@ -356,11 +364,13 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
 
     team_str = f"{team}" if pd.notnull(team) else ""
     mins_str = f"{int(mins)} mins" if pd.notnull(mins) else ""
-    line2_parts = [p for p in [team_str, mins_str] if p]
-    line2 = " | ".join(line2_parts)
+    rank_str = f"Rank #{rank_val}" if rank_val is not None else ""
+    line2_parts = [team_str, mins_str, rank_str]
+    line2 = " | ".join([p for p in line2_parts if p])
 
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
+    # Badge based on avg z of this player
     z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
@@ -388,13 +398,8 @@ if selected_player:
 
 # ---------- Ranking table ----------
 st.markdown("### Players Ranked by Z-Score")
-sel_metrics = list(metric_groups.keys())
-percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
-z_scores_all = (percentiles_all - 50) / 15
-plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
-
 cols_for_table = [
-    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Avg Z Score"
+    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score", "Rank"
 ]
 z_ranking = (plot_data[cols_for_table]
              .sort_values(by="Avg Z Score", ascending=False)
@@ -407,6 +412,6 @@ if "Age" in z_ranking:
     z_ranking["Age"] = z_ranking["Age"].apply(lambda x: int(x) if pd.notnull(x) else x)
 
 z_ranking.index = np.arange(1, len(z_ranking) + 1)
-z_ranking.index.name = "Rank"
+z_ranking.index.name = "Row"
 
 st.dataframe(z_ranking, use_container_width=True)
