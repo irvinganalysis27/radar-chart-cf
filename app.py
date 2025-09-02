@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import io
 import re
 
 # --- Basic password protection ---
@@ -17,7 +16,6 @@ if pwd != PASSWORD:
     st.stop()
 
 # ========== 6-position mapping ==========
-# Your 6 groups
 SIX_GROUPS = [
     "Goalkeeper",
     "Wide Defender",
@@ -27,8 +25,6 @@ SIX_GROUPS = [
     "Central Forward"
 ]
 
-# Raw tokens that map into the 6 groups.
-# We only use the FIRST listed position per player.
 RAW_TO_SIX = {
     # Goalkeeper
     "GK": "Goalkeeper", "GKP": "Goalkeeper", "GOALKEEPER": "Goalkeeper",
@@ -48,7 +44,8 @@ RAW_TO_SIX = {
     "DMF": "Central Midfielder", "DM": "Central Midfielder", "CDM": "Central Midfielder",
     "RDMF": "Central Midfielder", "RDM": "Central Midfielder",
     "LDMF": "Central Midfielder", "LDM": "Central Midfielder",
-    "AMF": "Central Midfielder", "AM": "Central Midfielder", "CAM": "Central Midfielder", "SS": "Central Midfielder", "10": "Central Midfielder",
+    "AMF": "Central Midfielder", "AM": "Central Midfielder", "CAM": "Central Midfielder",
+    "SS": "Central Midfielder", "10": "Central Midfielder",
 
     # Wide Midfielder
     "LWF": "Wide Midfielder", "RWF": "Wide Midfielder",
@@ -70,7 +67,6 @@ def _clean_pos_token(tok: str) -> str:
     return t
 
 def parse_first_position(cell) -> str:
-    """Get first listed position token from a cell like 'LWF, CF'."""
     if pd.isna(cell):
         return ""
     first = re.split(r"[,/]", str(cell))[0].strip()
@@ -78,17 +74,7 @@ def parse_first_position(cell) -> str:
 
 def map_first_position_to_group(cell) -> str:
     tok = parse_first_position(cell)
-    return RAW_TO_SIX.get(tok, "Central Midfielder" if tok in {"RCAM","LCAM"} else
-                          "Wide Midfielder" if tok in {"RWM","LWM"} else
-                          "Central Defender" if tok in {"RCD","LCD"} else
-                          "Goalkeeper" if tok in {"GK1"} else
-                          "Central Forward" if tok in {"STCF"} else
-                          "Wide Defender" if tok in {"RDF","LDF"} else
-                          "Wide Midfielder" if tok.startswith(("R", "L")) and tok.endswith(("W","WF","WM")) else
-                          "Central Midfielder" if tok.endswith(("MF","M")) else
-                          "Central Forward" if tok in {"CF9"} else
-                          "Goalkeeper" if tok == "GK" else
-                          "Wide Midfielder")  # safe default to wide mid if truly unknown
+    return RAW_TO_SIX.get(tok, "Wide Midfielder")  # safe default
 
 # ========== Metric sets ==========
 position_metrics = {
@@ -254,11 +240,18 @@ if not uploaded_file:
 
 df = pd.read_excel(uploaded_file)
 
-# ---------- Derive 6-group position from the FIRST listed position ----------
+# ---------- Positions ----------
+# Keep the raw full list for the table
+if "Position" in df.columns:
+    df["Positions played"] = df["Position"].astype(str)
+else:
+    df["Positions played"] = np.nan
+
+# Derive your 6-group bucket from the FIRST listed position
 df["Six-Group Position"] = df["Position"].apply(map_first_position_to_group) if "Position" in df.columns else np.nan
 
 # ---------- Minutes filter ----------
-minutes_col = "Minutes played"  # hard coded
+minutes_col = "Minutes played"
 min_minutes = st.number_input("Minimum minutes to include", min_value=0, value=1000, step=50)
 df["_minutes_numeric"] = pd.to_numeric(df.get(minutes_col, np.nan), errors="coerce")
 df = df[df["_minutes_numeric"] >= min_minutes].copy()
@@ -267,11 +260,14 @@ if df.empty:
     st.stop()
 st.caption(f"Filtering on '{minutes_col}' with threshold {min_minutes}. Players remaining, {len(df)}")
 
-# ---------- Filter by your 6 groups (multi select) ----------
-st.subheader("Filter by 6-position groups")
+# ---------- 6-group filter with no visible title ----------
 available_groups = [g for g in SIX_GROUPS if g in df["Six-Group Position"].unique()]
-selected_groups = st.multiselect("Include groups", options=available_groups, default=[])
-
+selected_groups = st.multiselect(
+    "Include groups",
+    options=available_groups,
+    default=[],
+    label_visibility="collapsed"  # hides the label
+)
 if selected_groups:
     df = df[df["Six-Group Position"].isin(selected_groups)].copy()
     if df.empty:
@@ -294,7 +290,7 @@ metrics_df = df[metrics].copy()
 percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
 
 # Data for plotting and table
-keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Six-Group Position"]
+keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Positions played", "Minutes played"]
 plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
 # ---------- Player select and chart ----------
@@ -346,16 +342,23 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         ax.text(mean_angle, 125, group, ha="center", va="center",
                 fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
 
+    # Title lines, add minutes next to team
     age = row["Age"].values[0]
     height = row["Height"].values[0]
     team = row["Team within selected timeframe"].values[0]
+    mins = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
     age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
     height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
     parts = [player_name]
     if age_str: parts.append(age_str)
     if height_str: parts.append(height_str)
     line1 = " | ".join(parts)
-    line2 = f"{team}" if pd.notnull(team) else ""
+
+    team_str = f"{team}" if pd.notnull(team) else ""
+    mins_str = f"{int(mins)} mins" if pd.notnull(mins) else ""
+    line2_parts = [p for p in [team_str, mins_str] if p]
+    line2 = " | ".join(line2_parts)
+
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
     z_scores = (percentiles - 50) / 15
@@ -383,7 +386,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
 if selected_player:
     plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
 
-# ---------- Ranking table and downloads ----------
+# ---------- Ranking table ----------
 st.markdown("### Players Ranked by Z-Score")
 sel_metrics = list(metric_groups.keys())
 percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
@@ -391,7 +394,7 @@ z_scores_all = (percentiles_all - 50) / 15
 plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
 
 cols_for_table = [
-    "Player", "Six-Group Position", "Age", "Team", "Team within selected timeframe", "Avg Z Score"
+    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Avg Z Score"
 ]
 z_ranking = (plot_data[cols_for_table]
              .sort_values(by="Avg Z Score", ascending=False)
@@ -407,17 +410,3 @@ z_ranking.index = np.arange(1, len(z_ranking) + 1)
 z_ranking.index.name = "Rank"
 
 st.dataframe(z_ranking, use_container_width=True)
-
-st.markdown("#### Download filtered table")
-csv_bytes = z_ranking.to_csv().encode("utf-8")
-st.download_button("Download CSV", data=csv_bytes, file_name="players_filtered_ranked.csv", mime="text/csv")
-
-output = io.BytesIO()
-with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-    z_ranking.to_excel(writer, sheet_name="Ranking")
-st.download_button(
-    "Download Excel",
-    data=output.getvalue(),
-    file_name="players_filtered_ranked.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
