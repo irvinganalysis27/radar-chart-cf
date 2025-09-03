@@ -653,6 +653,73 @@ for m in metrics:
         df[m] = 0
 df[metrics] = df[metrics].fillna(0)
 
+# ---------- Non negotiable filter ----------
+with st.expander("Non negotiable filter", expanded=False):
+    # Pick which list of metrics to choose from
+    use_all_cols = st.checkbox("Pick from all numeric columns", value=False, help="Unchecked, only metrics in the selected template are shown")
+
+    if use_all_cols:
+        # Build a clean pool of numeric columns
+        numeric_cols = sorted([c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])])
+        metric_pool = numeric_cols
+    else:
+        metric_pool = metrics  # only current template metrics
+
+    # If nothing available, skip
+    if len(metric_pool) == 0:
+        st.info("No numeric metrics available to filter.")
+        apply_nonneg = False
+        chosen_metric = None
+        mode = "Raw"
+        op = ">="
+        thr = 0.0
+    else:
+        chosen_metric = st.selectbox("Metric", metric_pool)
+        mode = st.radio("Apply to", ["Raw", "Percentile"], horizontal=True, help="Percentile uses the within-filter rank, 0 to 100")
+        op = st.selectbox("Operator", [">=", ">", "<=", "<"], index=0)
+        # Sensible default threshold
+        default_thr = 50.0 if mode == "Percentile" else float(np.nanmedian(pd.to_numeric(df[chosen_metric], errors="coerce")))
+        thr = st.number_input("Threshold", value=float(default_thr) if np.isfinite(default_thr) else 0.0)
+
+        apply_nonneg = st.checkbox("Apply non negotiable", value=False)
+
+    if apply_nonneg and chosen_metric is not None:
+        # If percentile, we need a percentile version of the column
+        if mode == "Percentile":
+            # Build ad-hoc percentile for this single metric over the current df
+            _col = chosen_metric
+            # Make sure it exists and numeric
+            df[_col] = pd.to_numeric(df[_col], errors="coerce")
+            perc_series = df[_col].rank(pct=True) * 100
+            perc_series = perc_series.round(1)
+            tmp_col = f"__tmp_percentile__{_col}"
+            df[tmp_col] = perc_series
+            filter_col = tmp_col
+        else:
+            filter_col = chosen_metric
+            df[filter_col] = pd.to_numeric(df[filter_col], errors="coerce")
+
+        if op == ">=":
+            mask = df[filter_col] >= thr
+        elif op == ">":
+            mask = df[filter_col] > thr
+        elif op == "<=":
+            mask = df[filter_col] <= thr
+        else:
+            mask = df[filter_col] < thr
+
+        kept = int(mask.sum())
+        dropped = int((~mask).sum())
+        df = df[mask].copy()
+
+        # Clean temp col if created
+        if mode == "Percentile":
+            df.drop(columns=[filter_col], inplace=True, errors="ignore")
+
+        st.caption(f"Non negotiable applied on '{chosen_metric}' {op} {thr}. Kept {kept}, removed {dropped} players.")
+
+# ---------- Recompute percentiles AFTER non negotiable filter ----------
+
 metrics_df = df[metrics].copy()
 percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
 
