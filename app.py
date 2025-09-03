@@ -752,7 +752,7 @@ if st.session_state.selected_player:
 
 # ---------- Ranking table ----------
 st.markdown("### Players Ranked by Z-Score")
-cols_for_table = ["Player", "Positions played", "Age", "Team", "Minutes played", "Avg Z Score", "Rank"]
+cols_for_table = ["Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score", "Rank"]
 z_ranking = (plot_data[cols_for_table].sort_values(by="Avg Z Score", ascending=False).reset_index(drop=True))
 z_ranking[["Team", "Team within selected timeframe"]] = z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
 if "Age" in z_ranking:
