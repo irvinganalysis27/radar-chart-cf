@@ -78,88 +78,37 @@ def map_first_position_to_group(cell) -> str:
 
 # ========== Metric sets ==========
 position_metrics = {
-    "Centre Forward (CF)": {
+    # ================== GOALKEEPER ==================
+    "Goalkeeper": {
         "metrics": [
-            "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
-            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
-            "Offensive duels per 90", "Offensive duels won, %"
+            "Clean sheets per 90", "Conceded goals per 90", "Prevented goals per 90",
+            "Save rate, %", "Shots against per 90", "Aerial duels per 90", "Exits per 90",
+            "Passes per 90", "Accurate passes, %", "Short / medium passes per 90",
+            "Accurate short / medium passes, %", "Long passes per 90", "Accurate long passes, %"
         ],
         "groups": {
-            "Successful defensive actions per 90": "Off The Ball",
-            "Aerial duels per 90": "Off The Ball",
-            "Aerial duels won, %": "Off The Ball",
-            "Non-penalty goals per 90": "Attacking",
-            "xG per 90": "Attacking",
-            "Shots per 90": "Attacking",
-            "Shots on target, %": "Attacking",
-            "Goal conversion, %": "Attacking",
-            "Assists per 90": "Attacking",
-            "xA per 90": "Attacking",
-            "Shot assists per 90": "Attacking",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession"
-        }
-    },
-    "Full Back (FB)": {
-        "metrics": [
-            # Defensive
-            "Successful defensive actions per 90", "Defensive duels per 90",
-            "Defensive duels won, %", "PAdj Interceptions",
-            # Possession
-            "Crosses per 90", "Accurate crosses, %", "Dribbles per 90",
-            "Successful dribbles, %", "Offensive duels per 90",
-            "Offensive duels won, %", "Passes to final third per 90",
-            "Accurate passes to final third, %",
-            # Attacking
-            "xA per 90", "Assists per 90"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Defensive",
-            "Defensive duels per 90": "Defensive",
-            "Defensive duels won, %": "Defensive",
-            "PAdj Interceptions": "Defensive",
-            "Crosses per 90": "Possession",
-            "Accurate crosses, %": "Possession",
-            "Dribbles per 90": "Possession",
-            "Successful dribbles, %": "Possession",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession",
-            "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession",
-            "xA per 90": "Attacking",
-            "Assists per 90": "Attacking"
-        }
-    },
-    "Destroyer CM": {
-        "metrics": [
-            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
-            "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions", "Successful dribbles, %",
-            "Offensive duels per 90", "Offensive duels won, %", "Accurate passes, %",
-            "Forward passes per 90", "Accurate forward passes, %", "Passes to final third per 90",
-            "Accurate passes to final third, %"
-        ],
-        "groups": {
-            "Successful defensive actions per 90": "Defensive",
-            "Defensive duels per 90": "Defensive",
-            "Defensive duels won, %": "Defensive",
-            "Aerial duels per 90": "Defensive",
-            "Aerial duels won, %": "Defensive",
-            "PAdj Interceptions": "Defensive",
-            "Successful dribbles, %": "Possession",
-            "Offensive duels per 90": "Possession",
-            "Offensive duels won, %": "Possession",
+            "Clean sheets per 90": "Goalkeeping",
+            "Conceded goals per 90": "Goalkeeping",
+            "Prevented goals per 90": "Goalkeeping",
+            "Save rate, %": "Goalkeeping",
+            "Shots against per 90": "Goalkeeping",
+            "Aerial duels per 90": "Goalkeeping",
+            "Exits per 90": "Goalkeeping",
+            "Passes per 90": "Possession",
             "Accurate passes, %": "Possession",
-            "Forward passes per 90": "Possession",
-            "Accurate forward passes, %": "Possession",
-            "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession"
+            "Short / medium passes per 90": "Possession",
+            "Accurate short / medium passes, %": "Possession",
+            "Long passes per 90": "Possession",
+            "Accurate long passes, %": "Possession"
         }
     },
-    "Penalty Box CB": {
+
+    # ================== CENTRAL DEFENDERS ==================
+    "Central Defender - Ball Winning": {
         "metrics": [
-            "Defensive duels per 90", "Defensive duels won, %", "Aerial duels per 90",
-            "Aerial duels won, %", "Shots blocked per 90", "PAdj Interceptions",
+            "Defensive duels per 90", "Defensive duels won, %",
+            "Aerial duels per 90", "Aerial duels won, %",
+            "Shots blocked per 90", "PAdj Interceptions",
             "Head goals per 90", "Successful dribbles, %", "Accurate passes, %"
         ],
         "groups": {
@@ -174,33 +123,132 @@ position_metrics = {
             "Accurate passes, %": "Possession"
         }
     },
-    "Winger": {
+
+    "Central Defender - Ball Playing": {
         "metrics": [
-            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Crosses per 90",
-            "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
-            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
-            "Accurate passes to penalty area, %"
+            "Defensive duels per 90", "Defensive duels won, %",
+            "Shots blocked per 90", "PAdj Interceptions",
+            "Forward passes per 90", "Accurate forward passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "Accurate passes, %", "Dribbles per 90", "Successful dribbles, %"
         ],
         "groups": {
-            "Non-penalty goals per 90": "Attacking",
-            "xG per 90": "Attacking",
-            "Shots per 90": "Attacking",
-            "Shots on target, %": "Attacking",
-            "Goal conversion, %": "Attacking",
-            "Assists per 90": "Attacking",
-            "xA per 90": "Attacking",
-            "Crosses per 90": "Possession",
-            "Accurate crosses, %": "Possession",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "Shots blocked per 90": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "Accurate passes, %": "Possession",
             "Dribbles per 90": "Possession",
-            "Successful dribbles, %": "Possession",
-            "Fouls suffered per 90": "Possession",
-            "Shot assists per 90": "Possession",
-            "Passes to penalty area per 90": "Possession",
-            "Accurate passes to penalty area, %": "Possession"
+            "Successful dribbles, %": "Possession"
         }
     },
-    "Creative CM": {
+
+    "Central Defender - All Round": {
+        "metrics": [
+            "Defensive duels per 90", "Defensive duels won, %",
+            "Aerial duels per 90", "Aerial duels won, %",
+            "Shots blocked per 90", "PAdj Interceptions",
+            "Accurate passes, %", "Forward passes per 90", "Accurate forward passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "Dribbles per 90", "Successful dribbles, %"
+        ],
+        "groups": {
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "Aerial duels per 90": "Defensive",
+            "Aerial duels won, %": "Defensive",
+            "Shots blocked per 90": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Accurate passes, %": "Possession",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession"
+        }
+    },
+
+    # ================== WIDE DEFENDERS ==================
+    "Wide Defender - Full Back": {
+        "metrics": [
+            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
+            "PAdj Interceptions", "Crosses per 90", "Accurate crosses, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "Dribbles per 90", "Successful dribbles, %",
+            "xA per 90", "Assists per 90"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Crosses per 90": "Possession",
+            "Accurate crosses, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "xA per 90": "Attacking",
+            "Assists per 90": "Attacking"
+        }
+    },
+
+    "Wide Defender - Wing Back": {
+        "metrics": [
+            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
+            "Dribbles per 90", "Successful dribbles, %", "Offensive duels per 90", "Offensive duels won, %",
+            "Crosses per 90", "Accurate crosses, %", "Passes to final third per 90", "Accurate passes to final third, %",
+            "xA per 90", "Assists per 90", "Shot assists per 90"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession",
+            "Crosses per 90": "Possession",
+            "Accurate crosses, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "xA per 90": "Attacking",
+            "Assists per 90": "Attacking",
+            "Shot assists per 90": "Attacking"
+        }
+    },
+
+    "Wide Defender - Inverted": {
+        "metrics": [
+            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
+            "PAdj Interceptions", "Forward passes per 90", "Accurate forward passes, %",
+            "Through passes per 90", "Accurate through passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "xA per 90", "Assists per 90"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Through passes per 90": "Possession",
+            "Accurate through passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "xA per 90": "Attacking",
+            "Assists per 90": "Attacking"
+        }
+    },
+
+    # ================== CENTRAL MIDFIELDERS ==================
+    "Central Midfielder - Creative": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
             "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
@@ -223,14 +271,272 @@ position_metrics = {
             "Dribbles per 90": "Possession",
             "Successful dribbles, %": "Possession"
         }
+    },
+
+    "Central Midfielder - Defensive": {
+        "metrics": [
+            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
+            "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions",
+            "Successful dribbles, %", "Offensive duels per 90", "Offensive duels won, %",
+            "Accurate passes, %", "Forward passes per 90", "Accurate forward passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "Aerial duels per 90": "Defensive",
+            "Aerial duels won, %": "Defensive",
+            "PAdj Interceptions": "Defensive",
+            "Successful dribbles, %": "Possession",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession",
+            "Accurate passes, %": "Possession",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession"
+        }
+    },
+
+    "Central Midfielder - All Round": {
+        "metrics": [
+            "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
+            "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
+            "Forward passes per 90", "Accurate forward passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "Dribbles per 90", "Successful dribbles, %",
+            "Successful defensive actions per 90", "Defensive duels per 90",
+            "Defensive duels won, %", "PAdj Interceptions"
+        ],
+        "groups": {
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "PAdj Interceptions": "Defensive"
+        }
+    },
+
+    # ================== WIDE MIDFIELDERS ==================
+    "Wide Midfielder - Touchline Winger": {
+        "metrics": [
+            "Non-penalty goals per 90", "xG per 90", "Assists per 90", "xA per 90",
+            "Crosses per 90", "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
+            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
+            "Accurate passes to penalty area, %"
+        ],
+        "groups": {
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Crosses per 90": "Possession",
+            "Accurate crosses, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Fouls suffered per 90": "Possession",
+            "Shot assists per 90": "Possession",
+            "Passes to penalty area per 90": "Possession",
+            "Accurate passes to penalty area, %": "Possession"
+        }
+    },
+
+    "Wide Midfielder - Inverted Winger": {
+        "metrics": [
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Goal conversion, %", "Assists per 90", "xA per 90", "Dribbles per 90", "Successful dribbles, %",
+            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
+            "Accurate passes to penalty area, %", "Deep completions per 90"
+        ],
+        "groups": {
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Fouls suffered per 90": "Possession",
+            "Shot assists per 90": "Possession",
+            "Passes to penalty area per 90": "Possession",
+            "Accurate passes to penalty area, %": "Possession",
+            "Deep completions per 90": "Possession"
+        }
+    },
+
+    "Wide Midfielder - Defensive Wide Midfielder": {
+        "metrics": [
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Assists per 90", "xA per 90", "Crosses per 90", "Accurate crosses, %",
+            "Dribbles per 90", "Successful dribbles, %", "Fouls suffered per 90", "Shot assists per 90",
+            "Successful defensive actions per 90", "Defensive duels won, %", "PAdj Interceptions"
+        ],
+        "groups": {
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Crosses per 90": "Possession",
+            "Accurate crosses, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Fouls suffered per 90": "Possession",
+            "Shot assists per 90": "Possession",
+            "Successful defensive actions per 90": "Defensive",
+            "Defensive duels won, %": "Defensive",
+            "PAdj Interceptions": "Defensive"
+        }
+    },
+
+    # ================== CENTRAL FORWARDS ==================
+    "Striker - Number 10": {
+        "metrics": [
+            "Successful defensive actions per 90", "Non-penalty goals per 90", "xG per 90", "Shots per 90",
+            "Shots on target, %", "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
+            "Forward passes per 90", "Accurate forward passes, %", "Passes to final third per 90",
+            "Accurate passes to final third, %", "Through passes per 90", "Accurate through passes, %"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Off The Ball",
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Shot assists per 90": "Attacking",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "Passes to final third per 90": "Possession",
+            "Accurate passes to final third, %": "Possession",
+            "Through passes per 90": "Possession",
+            "Accurate through passes, %": "Possession"
+        }
+    },
+
+    "Striker - Target Man": {
+        "metrics": [
+            "Aerial duels per 90", "Aerial duels won, %",
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Goal conversion, %", "Head goals per 90", "Assists per 90", "xA per 90", "Shot assists per 90",
+            "Offensive duels per 90", "Offensive duels won, %", "Passes to penalty area per 90",
+            "Accurate passes to penalty area, %"
+        ],
+        "groups": {
+            "Aerial duels per 90": "Off The Ball",
+            "Aerial duels won, %": "Off The Ball",
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Head goals per 90": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Shot assists per 90": "Attacking",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession",
+            "Passes to penalty area per 90": "Possession",
+            "Accurate passes to penalty area, %": "Possession"
+        }
+    },
+
+    "Striker - Penalty Box Striker": {
+        "metrics": [
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Goal conversion, %", "Shot assists per 90", "Touches in penalty area per 90",
+            "Offensive duels per 90", "Offensive duels won, %", "Dribbles per 90", "Successful dribbles, %"
+        ],
+        "groups": {
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Shot assists per 90": "Attacking",
+            "Touches in penalty area per 90": "Attacking",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession"
+        }
+    },
+
+    "Striker - All Round CF": {
+        "metrics": [
+            "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
+            "Offensive duels per 90", "Offensive duels won, %"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Off The Ball",
+            "Aerial duels per 90": "Off The Ball",
+            "Aerial duels won, %": "Off The Ball",
+            "Non-penalty goals per 90": "Attacking",
+            "xG per 90": "Attacking",
+            "Shots per 90": "Attacking",
+            "Shots on target, %": "Attacking",
+            "Goal conversion, %": "Attacking",
+            "Assists per 90": "Attacking",
+            "xA per 90": "Attacking",
+            "Shot assists per 90": "Attacking",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession"
+        }
+    },
+
+    "Striker - Pressing Forward": {
+        "metrics": [
+            "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
+            "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions",
+            "Offensive duels per 90", "Offensive duels won, %", "Dribbles per 90", "Successful dribbles, %",
+            "Forward passes per 90", "Accurate forward passes, %", "xA per 90", "Shot assists per 90"
+        ],
+        "groups": {
+            "Successful defensive actions per 90": "Off The Ball",
+            "Defensive duels per 90": "Off The Ball",
+            "Defensive duels won, %": "Off The Ball",
+            "Aerial duels per 90": "Off The Ball",
+            "Aerial duels won, %": "Off The Ball",
+            "PAdj Interceptions": "Off The Ball",
+            "Offensive duels per 90": "Possession",
+            "Offensive duels won, %": "Possession",
+            "Dribbles per 90": "Possession",
+            "Successful dribbles, %": "Possession",
+            "Forward passes per 90": "Possession",
+            "Accurate forward passes, %": "Possession",
+            "xA per 90": "Attacking",
+            "Shot assists per 90": "Attacking"
+        }
     }
 }
 
+# Colors
 group_colors = {
     "Off The Ball": "crimson",
     "Attacking": "royalblue",
     "Possession": "seagreen",
-    "Defensive": "darkorange"
+    "Defensive": "darkorange",
+    "Goalkeeping": "purple"
 }
 
 # ---------- File upload ----------
