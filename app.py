@@ -601,24 +601,49 @@ if selected_groups:
 # ---------- Session state for player/template ----------
 if "selected_player" not in st.session_state:
     st.session_state.selected_player = None
+if "prev_player" not in st.session_state:
+    st.session_state.prev_player = None
 if "selected_template" not in st.session_state:
     st.session_state.selected_template = None
 
-# Player select
+# Build player list after filters
 players = df["Player"].dropna().unique().tolist()
-selected_player = st.selectbox("Choose a player", players, index=0 if st.session_state.selected_player is None else players.index(st.session_state.selected_player) if st.session_state.selected_player in players else 0)
+if not players:
+    st.warning("No players available after filters.")
+    st.stop()
+
+# If current selected player fell out due to filters, reset to first
+if st.session_state.selected_player not in players:
+    st.session_state.selected_player = players[0]
+    st.session_state.prev_player = None  # force auto-pick on next step
+
+# Player select, keep sticky
+selected_player = st.selectbox(
+    "Choose a player",
+    players,
+    index=players.index(st.session_state.selected_player) if st.session_state.selected_player in players else 0
+)
+player_changed = (st.session_state.prev_player != selected_player)
 st.session_state.selected_player = selected_player
 
-# Auto-select template when player changes
-player_group = df.loc[df["Player"] == selected_player, "Six-Group Position"].values[0] if selected_player in df["Player"].values else None
-default_template = DEFAULT_TEMPLATE.get(player_group, list(position_metrics.keys())[0])
-if st.session_state.selected_template is None or (player_group and st.session_state.selected_template not in position_metrics):
+# If player changed, auto-pick default template for their Six-Group Position
+if player_changed and selected_player is not None:
+    player_group = df.loc[df["Player"] == selected_player, "Six-Group Position"].iloc[0] \
+        if selected_player in df["Player"].values else None
+    default_template = DEFAULT_TEMPLATE.get(player_group, list(position_metrics.keys())[0])
     st.session_state.selected_template = default_template
+    st.session_state.prev_player = selected_player
 
-# Template select
-selected_position_template = st.selectbox("Choose a position template for the chart", list(position_metrics.keys()), index=list(position_metrics.keys()).index(st.session_state.selected_template))
+# Template select, do not change selected_player when this changes
+template_names = list(position_metrics.keys())
+template_index = template_names.index(st.session_state.selected_template) \
+    if st.session_state.selected_template in template_names else 0
+selected_position_template = st.selectbox(
+    "Choose a position template for the chart",
+    template_names,
+    index=template_index
+)
 st.session_state.selected_template = selected_position_template
-
 # ---------- Metrics setup ----------
 metrics = position_metrics[selected_position_template]["metrics"]
 metric_groups = position_metrics[selected_position_template]["groups"]
