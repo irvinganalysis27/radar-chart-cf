@@ -654,7 +654,7 @@ for m in metrics:
 df[metrics] = df[metrics].fillna(0)
 
 # ---------- Non negotiable filter ----------
-with st.expander("Non negotiable filter", expanded=False):
+with st.expander("Essential Criteria", expanded=False):
     # Pick which list of metrics to choose from
     use_all_cols = st.checkbox("Pick from all numeric columns", value=False, help="Unchecked, only metrics in the selected template are shown")
 
