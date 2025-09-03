@@ -76,6 +76,16 @@ def map_first_position_to_group(cell) -> str:
     tok = parse_first_position(cell)
     return RAW_TO_SIX.get(tok, "Wide Midfielder")  # safe default
 
+# ========== Default template mapping ==========
+DEFAULT_TEMPLATE = {
+    "Goalkeeper": "Goalkeeper",
+    "Wide Defender": "Wide Defender - Full Back",
+    "Central Defender": "Central Defender - All Round",
+    "Central Midfielder": "Central Midfielder - All Round CM",
+    "Wide Midfielder": "Wide Midfielder - Touchline Winger",
+    "Central Forward": "Striker - All Round CF"
+}
+
 # ========== Metric sets ==========
 position_metrics = {
     # ================== GOALKEEPER ==================
@@ -102,7 +112,6 @@ position_metrics = {
             "Accurate long passes, %": "Possession"
         }
     },
-
     # ================== CENTRAL DEFENDERS ==================
     "Central Defender - Ball Winning": {
         "metrics": [
@@ -118,12 +127,11 @@ position_metrics = {
             "Aerial duels won, %": "Defensive",
             "Shots blocked per 90": "Defensive",
             "PAdj Interceptions": "Defensive",
-            "Head goals per 90": "Possession",
+            "Head goals per 90": "Attacking",
             "Successful dribbles, %": "Possession",
             "Accurate passes, %": "Possession"
         }
     },
-
     "Central Defender - Ball Playing": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %",
@@ -146,7 +154,6 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-
     "Central Defender - All Round": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %",
@@ -172,7 +179,6 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-
     # ================== WIDE DEFENDERS ==================
     "Wide Defender - Full Back": {
         "metrics": [
@@ -197,12 +203,11 @@ position_metrics = {
             "Assists per 90": "Attacking"
         }
     },
-
     "Wide Defender - Wing Back": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "Dribbles per 90", "Successful dribbles, %", "Offensive duels per 90", "Offensive duels won, %",
-            "Crosses per 90", "Accurate crosses, %", "Passes to final third per 90", "Accurate passes to final third, %",
+            "Crosses per 90", "Accurate crosses, %", "Passes to final third per 90",
             "xA per 90", "Assists per 90", "Shot assists per 90"
         ],
         "groups": {
@@ -216,13 +221,11 @@ position_metrics = {
             "Crosses per 90": "Possession",
             "Accurate crosses, %": "Possession",
             "Passes to final third per 90": "Possession",
-            "Accurate passes to final third, %": "Possession",
             "xA per 90": "Attacking",
             "Assists per 90": "Attacking",
             "Shot assists per 90": "Attacking"
         }
     },
-
     "Wide Defender - Inverted": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
@@ -246,7 +249,6 @@ position_metrics = {
             "Assists per 90": "Attacking"
         }
     },
-
     # ================== CENTRAL MIDFIELDERS ==================
     "Central Midfielder - Creative": {
         "metrics": [
@@ -272,7 +274,6 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-
     "Central Midfielder - Defensive": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
@@ -298,8 +299,7 @@ position_metrics = {
             "Accurate passes to final third, %": "Possession"
         }
     },
-
-    "Central Midfielder - All Round": {
+    "Central Midfielder - All Round CM": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
             "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
@@ -329,14 +329,13 @@ position_metrics = {
             "PAdj Interceptions": "Defensive"
         }
     },
-
     # ================== WIDE MIDFIELDERS ==================
     "Wide Midfielder - Touchline Winger": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Assists per 90", "xA per 90",
             "Crosses per 90", "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
-            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
-            "Accurate passes to penalty area, %"
+            "Fouls suffered per 90", "Shot assists per 90",
+            "Passes to penalty area per 90", "Accurate passes to penalty area, %"
         ],
         "groups": {
             "Non-penalty goals per 90": "Attacking",
@@ -353,13 +352,14 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-
     "Wide Midfielder - Inverted Winger": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Goal conversion, %", "Assists per 90", "xA per 90", "Dribbles per 90", "Successful dribbles, %",
-            "Fouls suffered per 90", "Shot assists per 90", "Passes to penalty area per 90",
-            "Accurate passes to penalty area, %", "Deep completions per 90"
+            "Goal conversion, %", "Assists per 90", "xA per 90",
+            "Dribbles per 90", "Successful dribbles, %",
+            "Fouls suffered per 90", "Shot assists per 90",
+            "Passes to penalty area per 90", "Accurate passes to penalty area, %",
+            "Deep completions per 90"
         ],
         "groups": {
             "Non-penalty goals per 90": "Attacking",
@@ -378,12 +378,12 @@ position_metrics = {
             "Deep completions per 90": "Possession"
         }
     },
-
     "Wide Midfielder - Defensive Wide Midfielder": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
-            "Assists per 90", "xA per 90", "Crosses per 90", "Accurate crosses, %",
-            "Dribbles per 90", "Successful dribbles, %", "Fouls suffered per 90", "Shot assists per 90",
+            "Assists per 90", "xA per 90",
+            "Crosses per 90", "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
+            "Fouls suffered per 90", "Shot assists per 90",
             "Successful defensive actions per 90", "Defensive duels won, %", "PAdj Interceptions"
         ],
         "groups": {
@@ -404,14 +404,15 @@ position_metrics = {
             "PAdj Interceptions": "Defensive"
         }
     },
-
-    # ================== CENTRAL FORWARDS ==================
+    # ================== STRIKERS ==================
     "Striker - Number 10": {
         "metrics": [
-            "Successful defensive actions per 90", "Non-penalty goals per 90", "xG per 90", "Shots per 90",
-            "Shots on target, %", "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
-            "Forward passes per 90", "Accurate forward passes, %", "Passes to final third per 90",
-            "Accurate passes to final third, %", "Through passes per 90", "Accurate through passes, %"
+            "Successful defensive actions per 90",
+            "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
+            "Goal conversion, %", "Assists per 90", "xA per 90", "Shot assists per 90",
+            "Forward passes per 90", "Accurate forward passes, %",
+            "Passes to final third per 90", "Accurate passes to final third, %",
+            "Through passes per 90", "Accurate through passes, %"
         ],
         "groups": {
             "Successful defensive actions per 90": "Off The Ball",
@@ -431,14 +432,13 @@ position_metrics = {
             "Accurate through passes, %": "Possession"
         }
     },
-
     "Striker - Target Man": {
         "metrics": [
             "Aerial duels per 90", "Aerial duels won, %",
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
             "Goal conversion, %", "Head goals per 90", "Assists per 90", "xA per 90", "Shot assists per 90",
-            "Offensive duels per 90", "Offensive duels won, %", "Passes to penalty area per 90",
-            "Accurate passes to penalty area, %"
+            "Offensive duels per 90", "Offensive duels won, %",
+            "Passes to penalty area per 90", "Accurate passes to penalty area, %"
         ],
         "groups": {
             "Aerial duels per 90": "Off The Ball",
@@ -458,12 +458,12 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-
     "Striker - Penalty Box Striker": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
             "Goal conversion, %", "Shot assists per 90", "Touches in penalty area per 90",
-            "Offensive duels per 90", "Offensive duels won, %", "Dribbles per 90", "Successful dribbles, %"
+            "Offensive duels per 90", "Offensive duels won, %",
+            "Dribbles per 90", "Successful dribbles, %"
         ],
         "groups": {
             "Non-penalty goals per 90": "Attacking",
@@ -479,7 +479,6 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-
     "Striker - All Round CF": {
         "metrics": [
             "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
@@ -503,13 +502,14 @@ position_metrics = {
             "Offensive duels won, %": "Possession"
         }
     },
-
     "Striker - Pressing Forward": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions",
-            "Offensive duels per 90", "Offensive duels won, %", "Dribbles per 90", "Successful dribbles, %",
-            "Forward passes per 90", "Accurate forward passes, %", "xA per 90", "Shot assists per 90"
+            "Offensive duels per 90", "Offensive duels won, %",
+            "Dribbles per 90", "Successful dribbles, %",
+            "Forward passes per 90", "Accurate forward passes, %",
+            "xA per 90", "Shot assists per 90"
         ],
         "groups": {
             "Successful defensive actions per 90": "Off The Ball",
@@ -552,7 +552,6 @@ if "Position" in df.columns:
 else:
     df["Positions played"] = np.nan
 
-# Derive your 6-group bucket from the FIRST listed position
 df["Six-Group Position"] = df["Position"].apply(map_first_position_to_group) if "Position" in df.columns else np.nan
 
 # ---------- Minutes filter ----------
@@ -585,7 +584,7 @@ else:
 
 st.caption(f"Filtering on '{minutes_col}' ≥ {min_minutes}. Players remaining, {len(df)}")
 
-# ---------- 6-group filter with no visible title ----------
+# ---------- 6-group filter ----------
 available_groups = [g for g in SIX_GROUPS if g in df["Six-Group Position"].unique()]
 selected_groups = st.multiselect(
     "Include groups",
@@ -599,35 +598,47 @@ if selected_groups:
         st.warning("No players after 6-group filter. Clear filters or choose different groups.")
         st.stop()
 
-# ---------- Choose template for metrics ----------
-selected_position_template = st.selectbox("Choose a position template for the chart", list(position_metrics.keys()))
+# ---------- Session state for player/template ----------
+if "selected_player" not in st.session_state:
+    st.session_state.selected_player = None
+if "selected_template" not in st.session_state:
+    st.session_state.selected_template = None
+
+# Player select
+players = df["Player"].dropna().unique().tolist()
+selected_player = st.selectbox("Choose a player", players, index=0 if st.session_state.selected_player is None else players.index(st.session_state.selected_player) if st.session_state.selected_player in players else 0)
+st.session_state.selected_player = selected_player
+
+# Auto-select template when player changes
+player_group = df.loc[df["Player"] == selected_player, "Six-Group Position"].values[0] if selected_player in df["Player"].values else None
+default_template = DEFAULT_TEMPLATE.get(player_group, list(position_metrics.keys())[0])
+if st.session_state.selected_template is None or (player_group and st.session_state.selected_template not in position_metrics):
+    st.session_state.selected_template = default_template
+
+# Template select
+selected_position_template = st.selectbox("Choose a position template for the chart", list(position_metrics.keys()), index=list(position_metrics.keys()).index(st.session_state.selected_template))
+st.session_state.selected_template = selected_position_template
+
+# ---------- Metrics setup ----------
 metrics = position_metrics[selected_position_template]["metrics"]
 metric_groups = position_metrics[selected_position_template]["groups"]
 
-# Ensure metric columns exist
 for m in metrics:
     if m not in df.columns:
         df[m] = 0
 df[metrics] = df[metrics].fillna(0)
 
-# Percentiles within filtered set
 metrics_df = df[metrics].copy()
 percentile_df = (metrics_df.rank(pct=True) * 100).round(1)
 
-# Data for plotting and table
 keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height", "Positions played", "Minutes played"]
 plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
-# --- Add Avg Z and Rank before the player select ---
 sel_metrics = list(metric_groups.keys())
 percentiles_all = plot_data[[m + " (percentile)" for m in sel_metrics]]
 z_scores_all = (percentiles_all - 50) / 15
 plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
 plot_data["Rank"] = plot_data["Avg Z Score"].rank(ascending=False, method="min").astype(int)
-
-# ---------- Player select and chart ----------
-players = plot_data["Player"].dropna().unique().tolist()
-selected_player = st.selectbox("Choose a player", players)
 
 def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
     row = plot_data[plot_data["Player"] == player_name]
@@ -657,24 +668,19 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     ax.bar(angles, percentiles, width=2*np.pi/num_bars*0.9, color=colors, edgecolor=colors, alpha=0.75)
 
     for angle, raw_val in zip(angles, raw):
-        ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center",
-                color="black", fontsize=10, fontweight="bold", rotation=0)
+        ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center", color="black", fontsize=10, fontweight="bold")
 
     for i, angle in enumerate(angles):
         label = sel_metrics_loc[i].replace(" per 90", "").replace(", %", " (%)")
-        ax.text(angle, 108, label, ha="center", va="center", rotation=0,
-                color="black", fontsize=10, fontweight="bold")
+        ax.text(angle, 108, label, ha="center", va="center", color="black", fontsize=10, fontweight="bold")
 
-    # Group labels
     group_positions = {}
     for g, a in zip(groups, angles):
         group_positions.setdefault(g, []).append(a)
     for group, group_angles in group_positions.items():
         mean_angle = np.mean(group_angles)
-        ax.text(mean_angle, 125, group, ha="center", va="center",
-                fontsize=20, fontweight="bold", color=group_colors[group], rotation=0)
+        ax.text(mean_angle, 125, group, ha="center", va="center", fontsize=20, fontweight="bold", color=group_colors[group])
 
-    # Title lines, include minutes and rank
     age = row["Age"].values[0]
     height = row["Height"].values[0]
     team = row["Team within selected timeframe"].values[0]
@@ -691,12 +697,10 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     team_str = f"{team}" if pd.notnull(team) else ""
     mins_str = f"{int(mins)} mins" if pd.notnull(mins) else ""
     rank_str = f"Rank #{rank_val}" if rank_val is not None else ""
-    line2_parts = [team_str, mins_str, rank_str]
-    line2 = " | ".join([p for p in line2_parts if p])
+    line2 = " | ".join([p for p in [team_str, mins_str, rank_str] if p])
 
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
-    # Badge based on avg z of this player
     z_scores = (percentiles - 50) / 15
     avg_z = np.mean(z_scores)
 
@@ -712,31 +716,22 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     st.markdown(
         f"<div style='text-align:center; margin-top: 20px;'>"
         f"<span style='font-size:24px; font-weight:bold;'>Average Z Score, {avg_z:.2f}</span><br>"
-        f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>"
-        f"{badge[0]}</span></div>",
+        f"<span style='background-color:{badge[1]}; color:white; padding:5px 10px; border-radius:8px; font-size:20px;'>{badge[0]}</span></div>",
         unsafe_allow_html=True
     )
 
     st.pyplot(fig)
 
-if selected_player:
-    plot_radial_bar_grouped(selected_player, plot_data, metric_groups, group_colors)
+if st.session_state.selected_player:
+    plot_radial_bar_grouped(st.session_state.selected_player, plot_data, metric_groups, group_colors)
 
 # ---------- Ranking table ----------
 st.markdown("### Players Ranked by Z-Score")
-cols_for_table = [
-    "Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score", "Rank"
-]
-z_ranking = (plot_data[cols_for_table]
-             .sort_values(by="Avg Z Score", ascending=False)
-             .reset_index(drop=True))
-
-z_ranking[["Team", "Team within selected timeframe"]] = (
-    z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
-)
+cols_for_table = ["Player", "Positions played", "Age", "Team", "Team within selected timeframe", "Minutes played", "Avg Z Score", "Rank"]
+z_ranking = (plot_data[cols_for_table].sort_values(by="Avg Z Score", ascending=False).reset_index(drop=True))
+z_ranking[["Team", "Team within selected timeframe"]] = z_ranking[["Team", "Team within selected timeframe"]].fillna("N/A")
 if "Age" in z_ranking:
     z_ranking["Age"] = z_ranking["Age"].apply(lambda x: int(x) if pd.notnull(x) else x)
-
 z_ranking.index = np.arange(1, len(z_ranking) + 1)
 z_ranking.index.name = "Row"
 
