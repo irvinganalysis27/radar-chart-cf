@@ -607,9 +607,12 @@ if "selected_template" not in st.session_state:
     st.session_state.selected_template = None
 if "user_changed_player" not in st.session_state:
     st.session_state.user_changed_player = False
+if "template_user_override" not in st.session_state:
+    st.session_state.template_user_override = False
+if "last_player_group" not in st.session_state:
+    st.session_state.last_player_group = None
 
-# --- Pick a working template before Essential Criteria, so we know which metric list to show if needed
-# Use existing selection if present, otherwise default from first available player's group
+# Choose a working template early so Essential Criteria can show current metrics if needed
 pre_players = df["Player"].dropna().unique().tolist()
 if pre_players:
     pre_player = st.session_state.selected_player if st.session_state.selected_player in pre_players else pre_players[0]
@@ -628,21 +631,15 @@ df[current_metrics] = df[current_metrics].fillna(0)
 
 # ---------- Essential Criteria (multiple, sticky and applied BEFORE player select) ----------
 with st.expander("Essential Criteria", expanded=False):
-    # Pool toggle
     use_all_cols = st.checkbox(
         "Pick from all numeric columns",
         value=False,
         help="Unchecked, only metrics in the selected template are shown"
     )
 
-    # Build pools
     numeric_cols_all = sorted([c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])])
-    if use_all_cols:
-        metric_pool_base = numeric_cols_all
-    else:
-        metric_pool_base = current_metrics  # current template's metrics
+    metric_pool_base = numeric_cols_all if use_all_cols else current_metrics
 
-    # Session rows
     if "ec_rows" not in st.session_state:
         st.session_state.ec_rows = 1
 
@@ -666,7 +663,6 @@ with st.expander("Essential Criteria", expanded=False):
         st.markdown(f"**Criterion {i+1}**")
         c1, c2, c3, c4 = st.columns([3, 2, 2, 3])
 
-        # Keep previously chosen metric even if template changes later
         prev_key_metric = f"ec_metric_{i}"
         prev_metric = st.session_state.get(prev_key_metric, None)
         metric_pool_display = list(metric_pool_base)
@@ -683,7 +679,6 @@ with st.expander("Essential Criteria", expanded=False):
             op = st.selectbox("Operator", [">=", ">", "<=", "<"], index=0, key=f"ec_op_{i}")
 
         with c4:
-            # Default threshold guess
             if mode == "Percentile":
                 default_thr = 50.0
             else:
@@ -698,7 +693,6 @@ with st.expander("Essential Criteria", expanded=False):
 
         criteria.append((metric_name, mode, op, thr_val))
 
-    # Apply criteria with AND logic
     if apply_nonneg and len(criteria) > 0:
         temp_cols = []
         mask_all = pd.Series(True, index=df.index)
@@ -737,7 +731,7 @@ with st.expander("Essential Criteria", expanded=False):
         )
         st.caption(f"Essential Criteria applied, {summary}. Kept {kept}, removed {dropped} players.")
 
-# ---------- Build player list AFTER Essential Criteria and wire sticky selection ----------
+# ---------- Player list AFTER Essential Criteria ----------
 def _on_player_change():
     st.session_state.user_changed_player = True
 
@@ -746,7 +740,6 @@ if not players:
     st.warning("No players available after filters.")
     st.stop()
 
-# If current selected player is gone due to filters, pick first but do not trigger auto template
 if st.session_state.selected_player not in players:
     st.session_state.selected_player = players[0]
     st.session_state.prev_player = st.session_state.selected_player
@@ -761,25 +754,43 @@ selected_player = st.selectbox(
 )
 st.session_state.selected_player = selected_player
 
-# Auto-pick default template ONLY when the user changes player
-if st.session_state.user_changed_player:
-    player_group = df.loc[df["Player"] == selected_player, "Six-Group Position"].iloc[0] \
-        if selected_player in df["Player"].values else None
-    default_template = DEFAULT_TEMPLATE.get(player_group, list(position_metrics.keys())[0])
-    st.session_state.selected_template = default_template
-    st.session_state.user_changed_player = False
+# --- Group aware auto template, only if you have not manually overridden
+def _get_player_group(name: str):
+    try:
+        return df.loc[df["Player"] == name, "Six-Group Position"].iloc[0]
+    except Exception:
+        return None
 
-# Template select, never changes the selected player
+current_group = _get_player_group(st.session_state.selected_player)
+
+if st.session_state.selected_template is None:
+    st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
+elif current_group != st.session_state.last_player_group and not st.session_state.template_user_override:
+    st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
+
+st.session_state.last_player_group = current_group
+
+def _on_template_change():
+    st.session_state.template_user_override = True
+
 template_names = list(position_metrics.keys())
 template_index = template_names.index(st.session_state.selected_template) \
     if st.session_state.selected_template in template_names else 0
+
 selected_position_template = st.selectbox(
     "Choose a position template for the chart",
     template_names,
     index=template_index,
-    key="template_select"
+    key="template_select",
+    on_change=_on_template_change
 )
 st.session_state.selected_template = selected_position_template
+
+# Optional button to resume following the group default
+if st.session_state.template_user_override:
+    if st.button("Follow group default again"):
+        st.session_state.template_user_override = False
+        st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
 
 # ---------- Metrics setup for the SELECTED template, then percentiles ----------
 metrics = position_metrics[selected_position_template]["metrics"]
