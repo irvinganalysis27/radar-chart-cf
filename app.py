@@ -653,70 +653,122 @@ for m in metrics:
         df[m] = 0
 df[metrics] = df[metrics].fillna(0)
 
-# ---------- Non negotiable filter ----------
+# ---------- Essential Criteria (multiple) ----------
 with st.expander("Essential Criteria", expanded=False):
-    # Pick which list of metrics to choose from
-    use_all_cols = st.checkbox("Pick from all numeric columns", value=False, help="Unchecked, only metrics in the selected template are shown")
-
+    # Choose pool
+    use_all_cols = st.checkbox(
+        "Pick from all numeric columns",
+        value=False,
+        help="Unchecked, only metrics in the selected template are shown"
+    )
     if use_all_cols:
-        # Build a clean pool of numeric columns
         numeric_cols = sorted([c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])])
         metric_pool = numeric_cols
     else:
-        metric_pool = metrics  # only current template metrics
+        metric_pool = metrics
 
-    # If nothing available, skip
+    # Setup session state for dynamic rows
+    if "ec_rows" not in st.session_state:
+        st.session_state.ec_rows = 1  # start with one rule
+
+    cols_btn = st.columns(3)
+    with cols_btn[0]:
+        if st.button("Add criterion"):
+            st.session_state.ec_rows += 1
+    with cols_btn[1]:
+        if st.button("Remove last", disabled=st.session_state.ec_rows <= 1):
+            st.session_state.ec_rows = max(1, st.session_state.ec_rows - 1)
+    with cols_btn[2]:
+        apply_nonneg = st.checkbox("Apply all criteria", value=False)
+
+    # If nothing available, skip UI but keep structure
     if len(metric_pool) == 0:
         st.info("No numeric metrics available to filter.")
         apply_nonneg = False
-        chosen_metric = None
-        mode = "Raw"
-        op = ">="
-        thr = 0.0
-    else:
-        chosen_metric = st.selectbox("Metric", metric_pool)
-        mode = st.radio("Apply to", ["Raw", "Percentile"], horizontal=True, help="Percentile uses the within-filter rank, 0 to 100")
-        op = st.selectbox("Operator", [">=", ">", "<=", "<"], index=0)
-        # Sensible default threshold
-        default_thr = 50.0 if mode == "Percentile" else float(np.nanmedian(pd.to_numeric(df[chosen_metric], errors="coerce")))
-        thr = st.number_input("Threshold", value=float(default_thr) if np.isfinite(default_thr) else 0.0)
+        st.session_state.ec_rows = 1
 
-        apply_nonneg = st.checkbox("Apply non negotiable", value=False)
+    # Collect row configs
+    criteria = []
+    for i in range(st.session_state.ec_rows):
+        st.markdown(f"**Criterion {i+1}**")
+        c1, c2, c3, c4 = st.columns([3, 2, 2, 3])
 
-    if apply_nonneg and chosen_metric is not None:
-        # If percentile, we need a percentile version of the column
-        if mode == "Percentile":
-            # Build ad-hoc percentile for this single metric over the current df
-            _col = chosen_metric
-            # Make sure it exists and numeric
-            df[_col] = pd.to_numeric(df[_col], errors="coerce")
-            perc_series = df[_col].rank(pct=True) * 100
-            perc_series = perc_series.round(1)
-            tmp_col = f"__tmp_percentile__{_col}"
-            df[tmp_col] = perc_series
-            filter_col = tmp_col
-        else:
-            filter_col = chosen_metric
-            df[filter_col] = pd.to_numeric(df[filter_col], errors="coerce")
+        with c1:
+            metric_key = f"ec_metric_{i}"
+            metric_name = st.selectbox("Metric", metric_pool, key=metric_key)
 
-        if op == ">=":
-            mask = df[filter_col] >= thr
-        elif op == ">":
-            mask = df[filter_col] > thr
-        elif op == "<=":
-            mask = df[filter_col] <= thr
-        else:
-            mask = df[filter_col] < thr
+        with c2:
+            mode_key = f"ec_mode_{i}"
+            mode = st.radio("Apply to", ["Raw", "Percentile"], horizontal=True, key=mode_key)
 
-        kept = int(mask.sum())
-        dropped = int((~mask).sum())
-        df = df[mask].copy()
+        with c3:
+            op_key = f"ec_op_{i}"
+            op = st.selectbox("Operator", [">=", ">", "<=", "<"], index=0, key=op_key)
 
-        # Clean temp col if created
-        if mode == "Percentile":
-            df.drop(columns=[filter_col], inplace=True, errors="ignore")
+        with c4:
+            # Default threshold guess
+            if mode == "Percentile":
+                default_thr = 50.0
+            else:
+                default_thr = float(np.nanmedian(pd.to_numeric(df[metric_name], errors="coerce")))
+                if not np.isfinite(default_thr):
+                    default_thr = 0.0
 
-        st.caption(f"Non negotiable applied on '{chosen_metric}' {op} {thr}. Kept {kept}, removed {dropped} players.")
+            thr_key = f"ec_thr_{i}"
+            thr_str = st.text_input("Threshold", value=str(int(default_thr)), key=thr_key)
+            try:
+                thr_val = float(thr_str)
+            except ValueError:
+                thr_val = default_thr
+
+        criteria.append((metric_name, mode, op, thr_val))
+
+    # Apply criteria
+    if apply_nonneg and len(metric_pool) > 0:
+        temp_cols = []
+        mask_all = pd.Series(True, index=df.index)
+
+        for metric_name, mode, op, thr_val in criteria:
+            # Prepare filter column
+            if mode == "Percentile":
+                df[metric_name] = pd.to_numeric(df[metric_name], errors="coerce")
+                perc_series = (df[metric_name].rank(pct=True) * 100).round(1)
+                tmp_col = f"__tmp_percentile__{metric_name}"
+                df[tmp_col] = perc_series
+                filter_col = tmp_col
+                temp_cols.append(tmp_col)
+            else:
+                filter_col = metric_name
+                df[filter_col] = pd.to_numeric(df[filter_col], errors="coerce")
+
+            # Build mask for this rule
+            if op == ">=":
+                mask = df[filter_col] >= thr_val
+            elif op == ">":
+                mask = df[filter_col] > thr_val
+            elif op == "<=":
+                mask = df[filter_col] <= thr_val
+            else:
+                mask = df[filter_col] < thr_val
+
+            # Combine with AND
+            mask_all = mask_all & mask
+
+        kept = int(mask_all.sum())
+        dropped = int((~mask_all).sum())
+
+        df = df[mask_all].copy()
+
+        # Clean temp cols
+        if temp_cols:
+            df.drop(columns=temp_cols, inplace=True, errors="ignore")
+
+        # Human readable summary
+        parts = []
+        for metric_name, mode, op, thr_val in criteria:
+            unit = "%" if mode == "Percentile" else ""
+            parts.append(f"{metric_name} {op} {thr_val}{unit}")
+        st.caption(f"Essential Criteria applied: {' AND '.join(parts)}. Kept {kept}, removed {dropped} players.")
 
 # ---------- Recompute percentiles AFTER non negotiable filter ----------
 
