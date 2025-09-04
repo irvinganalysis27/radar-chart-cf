@@ -79,11 +79,11 @@ def map_first_position_to_group(cell) -> str:
 # ========== Default template mapping ==========
 DEFAULT_TEMPLATE = {
     "Goalkeeper": "Goalkeeper",
-    "Wide Defender": "Wide Defender - Full Back",
-    "Central Defender": "Central Defender - All Round",
-    "Central Midfielder": "Central Midfielder - All Round CM",
-    "Wide Midfielder": "Wide Midfielder - Touchline Winger",
-    "Central Forward": "Striker - All Round CF"
+    "Wide Defender": "Wide Defender, Full Back",
+    "Central Defender": "Central Defender, All Round",
+    "Central Midfielder": "Central Midfielder, All Round CM",
+    "Wide Midfielder": "Wide Midfielder, Touchline Winger",
+    "Central Forward": "Striker, All Round CF"
 }
 
 # ========== Metric sets ==========
@@ -112,8 +112,9 @@ position_metrics = {
             "Accurate long passes, %": "Possession"
         }
     },
+
     # ================== CENTRAL DEFENDERS ==================
-    "Central Defender - Ball Winning": {
+    "Central Defender, Ball Winning": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %",
             "Aerial duels per 90", "Aerial duels won, %",
@@ -132,7 +133,7 @@ position_metrics = {
             "Accurate passes, %": "Possession"
         }
     },
-    "Central Defender - Ball Playing": {
+    "Central Defender, Ball Playing": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %",
             "Shots blocked per 90", "PAdj Interceptions",
@@ -154,7 +155,7 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-    "Central Defender - All Round": {
+    "Central Defender, All Round": {
         "metrics": [
             "Defensive duels per 90", "Defensive duels won, %",
             "Aerial duels per 90", "Aerial duels won, %",
@@ -179,8 +180,9 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
+
     # ================== WIDE DEFENDERS ==================
-    "Wide Defender - Full Back": {
+    "Wide Defender, Full Back": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "PAdj Interceptions", "Crosses per 90", "Accurate crosses, %",
@@ -203,7 +205,7 @@ position_metrics = {
             "Assists per 90": "Attacking"
         }
     },
-    "Wide Defender - Wing Back": {
+    "Wide Defender, Wing Back": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "Dribbles per 90", "Successful dribbles, %", "Offensive duels per 90", "Offensive duels won, %",
@@ -226,7 +228,7 @@ position_metrics = {
             "Shot assists per 90": "Attacking"
         }
     },
-    "Wide Defender - Inverted": {
+    "Wide Defender, Inverted": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "PAdj Interceptions", "Forward passes per 90", "Accurate forward passes, %",
@@ -249,8 +251,9 @@ position_metrics = {
             "Assists per 90": "Attacking"
         }
     },
+
     # ================== CENTRAL MIDFIELDERS ==================
-    "Central Midfielder - Creative": {
+    "Central Midfielder, Creative": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
             "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
@@ -274,7 +277,7 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-    "Central Midfielder - Defensive": {
+    "Central Midfielder, Defensive": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions",
@@ -299,7 +302,7 @@ position_metrics = {
             "Accurate passes to final third, %": "Possession"
         }
     },
-    "Central Midfielder - All Round CM": {
+    "Central Midfielder, All Round CM": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Goal conversion, %",
             "Assists per 90", "xA per 90", "Shots per 90", "Shots on target, %",
@@ -329,8 +332,9 @@ position_metrics = {
             "PAdj Interceptions": "Defensive"
         }
     },
+
     # ================== WIDE MIDFIELDERS ==================
-    "Wide Midfielder - Touchline Winger": {
+    "Wide Midfielder, Touchline Winger": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Assists per 90", "xA per 90",
             "Crosses per 90", "Accurate crosses, %", "Dribbles per 90", "Successful dribbles, %",
@@ -352,7 +356,7 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-    "Wide Midfielder - Inverted Winger": {
+    "Wide Midfielder, Inverted Winger": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
             "Goal conversion, %", "Assists per 90", "xA per 90",
@@ -378,7 +382,7 @@ position_metrics = {
             "Deep completions per 90": "Possession"
         }
     },
-    "Wide Midfielder - Defensive Wide Midfielder": {
+    "Wide Midfielder, Defensive Wide Midfielder": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
             "Assists per 90", "xA per 90",
@@ -404,8 +408,9 @@ position_metrics = {
             "PAdj Interceptions": "Defensive"
         }
     },
+
     # ================== STRIKERS ==================
-    "Striker - Number 10": {
+    "Striker, Number 10": {
         "metrics": [
             "Successful defensive actions per 90",
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
@@ -432,7 +437,7 @@ position_metrics = {
             "Accurate through passes, %": "Possession"
         }
     },
-    "Striker - Target Man": {
+    "Striker, Target Man": {
         "metrics": [
             "Aerial duels per 90", "Aerial duels won, %",
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
@@ -458,7 +463,7 @@ position_metrics = {
             "Accurate passes to penalty area, %": "Possession"
         }
     },
-    "Striker - Penalty Box Striker": {
+    "Striker, Penalty Box Striker": {
         "metrics": [
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
             "Goal conversion, %", "Shot assists per 90", "Touches in penalty area per 90",
@@ -479,7 +484,7 @@ position_metrics = {
             "Successful dribbles, %": "Possession"
         }
     },
-    "Striker - All Round CF": {
+    "Striker, All Round CF": {
         "metrics": [
             "Successful defensive actions per 90", "Aerial duels per 90", "Aerial duels won, %",
             "Non-penalty goals per 90", "xG per 90", "Shots per 90", "Shots on target, %",
@@ -502,7 +507,7 @@ position_metrics = {
             "Offensive duels won, %": "Possession"
         }
     },
-    "Striker - Pressing Forward": {
+    "Striker, Pressing Forward": {
         "metrics": [
             "Successful defensive actions per 90", "Defensive duels per 90", "Defensive duels won, %",
             "Aerial duels per 90", "Aerial duels won, %", "PAdj Interceptions",
@@ -598,38 +603,30 @@ if selected_groups:
         st.warning("No players after 6-group filter. Clear filters or choose different groups.")
         st.stop()
 
-# ---------- Session state for player/template ----------
+# ---------- Session state ----------
 if "selected_player" not in st.session_state:
     st.session_state.selected_player = None
 if "prev_player" not in st.session_state:
     st.session_state.prev_player = None
 if "selected_template" not in st.session_state:
     st.session_state.selected_template = None
-if "user_changed_player" not in st.session_state:
-    st.session_state.user_changed_player = False
-if "template_user_override" not in st.session_state:
-    st.session_state.template_user_override = False
-if "last_player_group" not in st.session_state:
-    st.session_state.last_player_group = None
 
-# Choose a working template early so Essential Criteria can show current metrics if needed
+# Pre pick a template so Essential Criteria can use current metrics if needed
 pre_players = df["Player"].dropna().unique().tolist()
 if pre_players:
-    pre_player = st.session_state.selected_player if st.session_state.selected_player in pre_players else pre_players[0]
-    pre_group = df.loc[df["Player"] == pre_player, "Six-Group Position"].iloc[0]
+    base_player = st.session_state.selected_player if st.session_state.selected_player in pre_players else pre_players[0]
+    base_group = df.loc[df["Player"] == base_player, "Six-Group Position"].iloc[0]
     if st.session_state.selected_template is None:
-        st.session_state.selected_template = DEFAULT_TEMPLATE.get(pre_group, list(position_metrics.keys())[0])
+        st.session_state.selected_template = DEFAULT_TEMPLATE.get(base_group, list(position_metrics.keys())[0])
 
 current_template_name = st.session_state.selected_template or list(position_metrics.keys())[0]
 current_metrics = position_metrics[current_template_name]["metrics"]
-
-# Ensure columns exist for current template metrics, for optional use in Essential Criteria
 for m in current_metrics:
     if m not in df.columns:
         df[m] = 0
 df[current_metrics] = df[current_metrics].fillna(0)
 
-# ---------- Essential Criteria (multiple, sticky and applied BEFORE player select) ----------
+# ---------- Essential Criteria ----------
 with st.expander("Essential Criteria", expanded=False):
     use_all_cols = st.checkbox(
         "Pick from all numeric columns",
@@ -643,14 +640,14 @@ with st.expander("Essential Criteria", expanded=False):
     if "ec_rows" not in st.session_state:
         st.session_state.ec_rows = 1
 
-    colb1, colb2, colb3 = st.columns(3)
-    with colb1:
+    cbtn1, cbtn2, cbtn3 = st.columns(3)
+    with cbtn1:
         if st.button("Add criterion"):
             st.session_state.ec_rows += 1
-    with colb2:
+    with cbtn2:
         if st.button("Remove last", disabled=st.session_state.ec_rows <= 1):
             st.session_state.ec_rows = max(1, st.session_state.ec_rows - 1)
-    with colb3:
+    with cbtn3:
         apply_nonneg = st.checkbox("Apply all criteria", value=False)
 
     if len(metric_pool_base) == 0:
@@ -732,9 +729,6 @@ with st.expander("Essential Criteria", expanded=False):
         st.caption(f"Essential Criteria applied, {summary}. Kept {kept}, removed {dropped} players.")
 
 # ---------- Player list AFTER Essential Criteria ----------
-def _on_player_change():
-    st.session_state.user_changed_player = True
-
 players = df["Player"].dropna().unique().tolist()
 if not players:
     st.warning("No players available after filters.")
@@ -742,19 +736,15 @@ if not players:
 
 if st.session_state.selected_player not in players:
     st.session_state.selected_player = players[0]
-    st.session_state.prev_player = st.session_state.selected_player
-    st.session_state.user_changed_player = False
-
 selected_player = st.selectbox(
     "Choose a player",
     players,
     index=players.index(st.session_state.selected_player) if st.session_state.selected_player in players else 0,
-    on_change=_on_player_change,
     key="player_select"
 )
 st.session_state.selected_player = selected_player
 
-# --- Group aware auto template, only if you have not manually overridden
+# ---------- Always follow the group default when player changes ----------
 def _get_player_group(name: str):
     try:
         return df.loc[df["Player"] == name, "Six-Group Position"].iloc[0]
@@ -762,17 +752,9 @@ def _get_player_group(name: str):
         return None
 
 current_group = _get_player_group(st.session_state.selected_player)
+st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
 
-if st.session_state.selected_template is None:
-    st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
-elif current_group != st.session_state.last_player_group and not st.session_state.template_user_override:
-    st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
-
-st.session_state.last_player_group = current_group
-
-def _on_template_change():
-    st.session_state.template_user_override = True
-
+# Template select is still available, but as soon as you choose another player, it will snap back to that group default
 template_names = list(position_metrics.keys())
 template_index = template_names.index(st.session_state.selected_template) \
     if st.session_state.selected_template in template_names else 0
@@ -781,18 +763,11 @@ selected_position_template = st.selectbox(
     "Choose a position template for the chart",
     template_names,
     index=template_index,
-    key="template_select",
-    on_change=_on_template_change
+    key="template_select"
 )
 st.session_state.selected_template = selected_position_template
 
-# Optional button to resume following the group default
-if st.session_state.template_user_override:
-    if st.button("Follow group default again"):
-        st.session_state.template_user_override = False
-        st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_group, list(position_metrics.keys())[0])
-
-# ---------- Metrics setup for the SELECTED template, then percentiles ----------
+# ---------- Metrics for selected template, then percentiles ----------
 metrics = position_metrics[selected_position_template]["metrics"]
 metric_groups = position_metrics[selected_position_template]["groups"]
 
