@@ -76,7 +76,7 @@ def map_first_position_to_group(cell) -> str:
     tok = parse_first_position(cell)
     return RAW_TO_SIX.get(tok, "Wide Midfielder")  # safe default
 
-# ========== Default template mapping (names must match keys below) ==========
+# ========== Default template mapping (must match position_metrics keys) ==========
 DEFAULT_TEMPLATE = {
     "Goalkeeper": "Goalkeeper",
     "Wide Defender": "Wide Defender, Full Back",
@@ -585,30 +585,27 @@ st.caption(f"Filtering on '{minutes_col}' ≥ {min_minutes}. Players remaining, 
 
 # ---------- 6-group filter ----------
 available_groups = [g for g in SIX_GROUPS if g in df["Six-Group Position"].unique()]
-selected_groups = st.multiselect(
-    "Include groups",
-    options=available_groups,
-    default=[],
-    label_visibility="collapsed"
-)
+selected_groups = st.multiselect("Include groups", options=available_groups, default=[], label_visibility="collapsed")
 if selected_groups:
     df = df[df["Six-Group Position"].isin(selected_groups)].copy()
     if df.empty:
         st.warning("No players after 6-group filter. Clear filters or choose different groups.")
         st.stop()
 
-# Which single group is currently selected, None if zero or multiple
+# Track if exactly one group is selected
 current_single_group = selected_groups[0] if len(selected_groups) == 1 else None
 
-# ---------- Session state for player and template ----------
+# ---------- Session state for player/template & EC ----------
 if "selected_player" not in st.session_state:
     st.session_state.selected_player = None
 if "selected_template" not in st.session_state:
     st.session_state.selected_template = None
 if "last_auto_group" not in st.session_state:
     st.session_state.last_auto_group = None
+if "ec_rows" not in st.session_state:
+    st.session_state.ec_rows = 1
 
-# Initialise template once, prefer the single selected group default
+# Initialise template once (prefer single-group default)
 if st.session_state.selected_template is None:
     if current_single_group:
         st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_single_group, list(position_metrics.keys())[0])
@@ -616,13 +613,121 @@ if st.session_state.selected_template is None:
     else:
         st.session_state.selected_template = list(position_metrics.keys())[0]
 
-# If the 6-group selection changed to a new single group, snap to that group's default
+# If the 6-group selection changed to a *new* single group, snap to that default
 if current_single_group is not None and current_single_group != st.session_state.last_auto_group:
     st.session_state.selected_template = DEFAULT_TEMPLATE.get(current_single_group, st.session_state.selected_template)
     st.session_state.last_auto_group = current_single_group
-# If multiple groups or none selected, do not auto-change the template
+# If zero/multiple groups, don't auto-change the template.
 
-# ---------- Player select, never alters the template ----------
+# ---------- Build metric pool for Essential Criteria (needs current template) ----------
+current_template_name = st.session_state.selected_template or list(position_metrics.keys())[0]
+current_metrics = position_metrics[current_template_name]["metrics"]
+for m in current_metrics:
+    if m not in df.columns:
+        df[m] = 0
+df[current_metrics] = df[current_metrics].fillna(0)
+
+# ---------- Essential Criteria (multiple AND rules) ----------
+with st.expander("Essential Criteria", expanded=False):
+    use_all_cols = st.checkbox(
+        "Pick from all numeric columns",
+        value=False,
+        help="Unchecked, only metrics in the selected template are shown"
+    )
+    numeric_cols_all = sorted([c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])])
+    metric_pool_base = numeric_cols_all if use_all_cols else current_metrics
+
+    cbtn1, cbtn2, cbtn3 = st.columns(3)
+    with cbtn1:
+        if st.button("Add criterion"):
+            st.session_state.ec_rows += 1
+    with cbtn2:
+        if st.button("Remove last", disabled=st.session_state.ec_rows <= 1):
+            st.session_state.ec_rows = max(1, st.session_state.ec_rows - 1)
+    with cbtn3:
+        apply_nonneg = st.checkbox("Apply all criteria", value=False)
+
+    if len(metric_pool_base) == 0:
+        st.info("No numeric metrics available to filter.")
+        apply_nonneg = False
+        st.session_state.ec_rows = 1
+
+    criteria = []
+    for i in range(st.session_state.ec_rows):
+        st.markdown(f"**Criterion {i+1}**")
+        c1, c2, c3, c4 = st.columns([3, 2, 2, 3])
+
+        prev_key_metric = f"ec_metric_{i}"
+        prev_metric = st.session_state.get(prev_key_metric, None)
+        metric_pool_display = list(metric_pool_base)
+        # Keep previous metric visible even if pool changed (prevents jumpiness)
+        if prev_metric and prev_metric not in metric_pool_display and prev_metric in numeric_cols_all:
+            metric_pool_display = [prev_metric] + [m for m in metric_pool_display if m != prev_metric]
+
+        with c1:
+            metric_name = st.selectbox("Metric", metric_pool_display, key=prev_key_metric)
+
+        with c2:
+            mode = st.radio("Apply to", ["Raw", "Percentile"], horizontal=True, key=f"ec_mode_{i}")
+
+        with c3:
+            op = st.selectbox("Operator", [">=", ">", "<=", "<"], index=0, key=f"ec_op_{i}")
+
+        with c4:
+            if mode == "Percentile":
+                default_thr = 50.0
+            else:
+                default_thr = float(np.nanmedian(pd.to_numeric(df[metric_name], errors="coerce")))
+                if not np.isfinite(default_thr):
+                    default_thr = 0.0
+            thr_str = st.text_input("Threshold", value=str(int(default_thr)), key=f"ec_thr_{i}")
+            try:
+                thr_val = float(thr_str)
+            except ValueError:
+                thr_val = default_thr
+
+        criteria.append((metric_name, mode, op, thr_val))
+
+    if apply_nonneg and len(criteria) > 0:
+        temp_cols = []
+        mask_all = pd.Series(True, index=df.index)
+
+        for metric_name, mode, op, thr_val in criteria:
+            if mode == "Percentile":
+                df[metric_name] = pd.to_numeric(df[metric_name], errors="coerce")
+                perc_series = (df[metric_name].rank(pct=True) * 100).round(1)
+                tmp_col = f"__tmp_percentile__{metric_name}"
+                df[tmp_col] = perc_series
+                filter_col = tmp_col
+                temp_cols.append(tmp_col)
+            else:
+                filter_col = metric_name
+                df[filter_col] = pd.to_numeric(df[filter_col], errors="coerce")
+
+            if op == ">=":
+                mask = df[filter_col] >= thr_val
+            elif op == ">":
+                mask = df[filter_col] > thr_val
+            elif op == "<=":
+                mask = df[filter_col] <= thr_val
+            else:
+                mask = df[filter_col] < thr_val
+
+            mask_all &= mask
+
+        kept = int(mask_all.sum())
+        dropped = int((~mask_all).sum())
+        df = df[mask_all].copy()
+
+        if temp_cols:
+            df.drop(columns=temp_cols, inplace=True, errors="ignore")
+
+        summary = " AND ".join(
+            [f"{m} {o} {t}{'%' if md=='Percentile' else ''}" for m, md, o, t in criteria]
+        )
+        st.caption(f"Essential Criteria applied: {summary}. Kept {kept}, removed {dropped} players.")
+
+# ---------- Player select (after EC). Changing player NEVER changes template ----------
 players = df["Player"].dropna().unique().tolist()
 if not players:
     st.warning("No players available after filters.")
@@ -639,7 +744,7 @@ selected_player = st.selectbox(
 )
 st.session_state.selected_player = selected_player
 
-# ---------- Template select, user controlled ----------
+# ---------- Template select (user-controlled). Only auto-snaps when single-group changes ----------
 template_names = list(position_metrics.keys())
 tpl_index = template_names.index(st.session_state.selected_template) if st.session_state.selected_template in template_names else 0
 selected_position_template = st.selectbox(
@@ -654,6 +759,7 @@ st.session_state.selected_template = selected_position_template
 metrics = position_metrics[selected_position_template]["metrics"]
 metric_groups = position_metrics[selected_position_template]["groups"]
 
+# Ensure columns exist + fill
 for m in metrics:
     if m not in df.columns:
         df[m] = 0
@@ -666,6 +772,7 @@ keep_cols = ["Player", "Team within selected timeframe", "Team", "Age", "Height"
 for c in keep_cols:
     if c not in df.columns:
         df[c] = np.nan
+
 plot_data = pd.concat([df[keep_cols], metrics_df, percentile_df.add_suffix(" (percentile)")], axis=1)
 
 sel_metrics = list(metric_groups.keys())
@@ -674,6 +781,7 @@ z_scores_all = (percentiles_all - 50) / 15
 plot_data["Avg Z Score"] = z_scores_all.mean(axis=1)
 plot_data["Rank"] = plot_data["Avg Z Score"].rank(ascending=False, method="min").astype(int)
 
+# ---------- Chart ----------
 def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors):
     row = plot_data[plot_data["Player"] == player_name]
     if row.empty:
