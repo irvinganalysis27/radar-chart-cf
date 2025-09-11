@@ -1,7 +1,21 @@
 # shared_templates.py
 
-import re
+import streamlit as st
 import pandas as pd
+
+@st.cache_data(show_spinner=False)
+def _read_xlsx(file_bytes):
+    return pd.read_excel(file_bytes)
+
+def get_uploaded_df(uploader_key="uploader_shared"):
+    f = st.file_uploader("Upload your Excel file", type=["xlsx"], key=uploader_key)
+    if not f:
+        return None
+    # store once for all pages
+    if "uploaded_name" not in st.session_state or st.session_state.uploaded_name != f.name:
+        st.session_state.uploaded_df = _read_xlsx(f)
+        st.session_state.uploaded_name = f.name
+    return st.session_state.uploaded_df
 
 # 6-position buckets
 SIX_GROUPS = [
