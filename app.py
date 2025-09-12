@@ -789,87 +789,50 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         return
 
     sel_metrics_loc = list(metric_groups.keys())
-    raw          = row[sel_metrics_loc].values.flatten()
-    percentiles  = row[[m + " (percentile)" for m in sel_metrics_loc]].values.flatten()
-    groups       = [metric_groups[m] for m in sel_metrics_loc]
-    bar_colors   = [group_colors.get(g, "grey") for g in groups]
+    raw = row[sel_metrics_loc].values.flatten()
+    percentiles = row[[m + " (percentile)" for m in sel_metrics_loc]].values.flatten()
+    groups = [metric_groups[m] for m in sel_metrics_loc]
+    colors = [group_colors.get(g, "grey") for g in groups]
 
-    n = len(sel_metrics_loc)
-    step   = 2 * np.pi / n
-    angles = np.linspace(0, 2*np.pi, n, endpoint=False)
+    num_bars = len(sel_metrics_loc)
+    angles = np.linspace(0, 2*np.pi, num_bars, endpoint=False)
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
     ax.set_theta_offset(np.pi/2)
     ax.set_theta_direction(-1)
-
-    # give headroom for outside genre labels
-    ax.set_ylim(0, 110)
+    ax.set_ylim(0, 100)
     ax.set_yticklabels([])
-    ax.set_xticks([])  # we draw metric labels manually
+    ax.set_xticks([])
     ax.spines["polar"].set_visible(False)
 
-    # ----- Background wedges (contiguous runs per genre) -----
-    runs, run_start = [], 0
-    for i in range(1, n):
-        if groups[i] != groups[i-1]:
-            runs.append((run_start, i-1, groups[i-1]))
-            run_start = i
-    runs.append((run_start, n-1, groups[-1]))
+    ax.bar(angles, percentiles, width=2*np.pi/num_bars*0.9, color=colors, edgecolor=colors, alpha=0.75)
 
-    for start_idx, end_idx, g in runs:
-        width  = (end_idx - start_idx + 1) * step
-        center = start_idx * step + width / 2.0
-        color  = group_colors.get(g, "#999999")
+    for angle, raw_val in zip(angles, raw):
+        ax.text(angle, 50, f"{raw_val:.2f}", ha="center", va="center", color="black", fontsize=10, fontweight="bold")
 
-        # fill wedge up to 100 so it sits behind the bars
-        ax.bar([center], [100], width=width, bottom=0,
-               color=color, alpha=GENRE_BG_ALPHA,
-               edgecolor=None, linewidth=0, zorder=0)
-
-        # horizontal genre label outside the ring (same style as comparison)
-        ax.text(center, GENRE_LABEL_R, g,
-                rotation=0, rotation_mode="anchor",
-                ha="center", va="center",
-                fontsize=12, fontweight="bold",
-                color=color, zorder=20, clip_on=False,
-                bbox=dict(facecolor="white", alpha=0.65, edgecolor="none", pad=1.5))
-
-    # ----- Bars (percentiles) -----
-    ax.bar(
-        angles, percentiles,
-        width=step*0.90,
-        color=bar_colors, edgecolor=bar_colors,
-        alpha=0.75, zorder=10
-    )
-
-    # raw values printed at mid radius
-    for ang, val in zip(angles, raw):
-        ax.text(ang, 50, f"{val:.2f}",
-                ha="center", va="center",
-                color="black", fontsize=10, fontweight="bold",
-                zorder=15)
-
-    # metric labels at r=102 (inside the outside genre labels)
-    for i, ang in enumerate(angles):
+    for i, angle in enumerate(angles):
         label = sel_metrics_loc[i].replace(" per 90", "").replace(", %", " (%)")
-        ax.text(ang, 102, label,
-                ha="center", va="center",
-                color="black", fontsize=10, fontweight="bold",
-                zorder=15)
+        ax.text(angle, 108, label, ha="center", va="center", color="black", fontsize=10, fontweight="bold")
 
-    # ----- Title & summary (unchanged) -----
-    age    = row["Age"].values[0]
+    group_positions = {}
+    for g, a in zip(groups, angles):
+        group_positions.setdefault(g, []).append(a)
+    for group, group_angles in group_positions.items():
+        mean_angle = np.mean(group_angles)
+        ax.text(mean_angle, 125, group, ha="center", va="center", fontsize=20, fontweight="bold", color=group_colors.get(group, "grey"))
+
+    age = row["Age"].values[0]
     height = row["Height"].values[0]
-    team   = row["Team within selected timeframe"].values[0]
-    mins   = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
+    team = row["Team within selected timeframe"].values[0]
+    mins = row["Minutes played"].values[0] if "Minutes played" in row else np.nan
     rank_val = int(row["Rank"].values[0]) if "Rank" in row else None
 
-    age_str    = f"{int(age)} years old"   if not pd.isnull(age)    else ""
-    height_str = f"{int(height)} cm"       if not pd.isnull(height) else ""
+    age_str = f"{int(age)} years old" if not pd.isnull(age) else ""
+    height_str = f"{int(height)} cm" if not pd.isnull(height) else ""
     parts = [player_name]
-    if age_str:    parts.append(age_str)
+    if age_str: parts.append(age_str)
     if height_str: parts.append(height_str)
     line1 = " | ".join(parts)
 
@@ -880,13 +843,17 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
 
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
 
-    # badge (unchanged)
     z_scores = (percentiles - 50) / 15
-    avg_z = float(np.nanmean(z_scores))
-    if   avg_z >= 1.0:  badge = ("Excellent", "#228B22")
-    elif avg_z >= 0.3:  badge = ("Good",      "#1E90FF")
-    elif avg_z >= -0.3: badge = ("Average",   "#DAA520")
-    else:               badge = ("Below Average", "#DC143C")
+    avg_z = np.mean(z_scores)
+
+    if avg_z >= 1.0:
+        badge = ("Excellent", "#228B22")
+    elif avg_z >= 0.3:
+        badge = ("Good", "#1E90FF")
+    elif avg_z >= -0.3:
+        badge = ("Average", "#DAA520")
+    else:
+        badge = ("Below Average", "#DC143C")
 
     st.markdown(
         f"<div style='text-align:center; margin-top: 20px;'>"
@@ -896,6 +863,9 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     )
 
     st.pyplot(fig)
+
+if st.session_state.selected_player:
+    plot_radial_bar_grouped(st.session_state.selected_player, plot_data, metric_groups, group_colors)
 
 # ---------- Ranking table ----------
 st.markdown("### Players Ranked by Z-Score")
