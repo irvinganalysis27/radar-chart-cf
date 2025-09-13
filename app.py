@@ -7,7 +7,7 @@ import re
 # --- Basic password protection ---
 PASSWORD = "cowboy"
 
-st.set_page_config(page_title="Radar Chart and Ranking App", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Comparison Radar", layout="centered")
 
 st.title("⚽ Radar Chart and Ranking App")
 
