@@ -7,6 +7,8 @@ import re
 # --- Basic password protection ---
 PASSWORD = "cowboy"
 
+st.set_page_config(page_title="Radar Chart and Ranking App", layout="wide", initial_sidebar_state="collapsed")
+
 st.title("⚽ Radar Chart and Ranking App")
 
 # Ask for password
@@ -862,7 +864,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
         unsafe_allow_html=True
     )
 
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
 
 if st.session_state.selected_player:
     plot_radial_bar_grouped(st.session_state.selected_player, plot_data, metric_groups, group_colors)
