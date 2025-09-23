@@ -845,7 +845,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
                 fontsize=20, fontweight="bold",
                 color=group_colors.get(group, "grey"))
 
-        # ---------- Title (uses WEIGHTED Z) ----------
+            # ---------- Title (uses WEIGHTED Z) ----------
     age     = row["Age"].values[0] if "Age" in row else np.nan
     height  = row["Height"].values[0] if "Height" in row else np.nan
     team    = row["Team within selected timeframe"].values[0] if "Team within selected timeframe" in row else ""
@@ -871,17 +871,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
     )
     weighted_z = avg_z * mult
 
-    # Rating from weighted Z
-    if weighted_z >= 1.0:
-        rating, badge_color = "Excellent", "#228B22"
-    elif weighted_z >= 0.3:
-        rating, badge_color = "Good", "#1E90FF"
-    elif weighted_z >= -0.3:
-        rating, badge_color = "Average", "#DAA520"
-    else:
-        rating, badge_color = "Below Average", "#DC143C"
-
-    # Build title ONCE
+    # Build title (Weighted Z only)
     line1_parts = [player_name]
     if not pd.isnull(age):    line1_parts.append(f"{int(age)} years old")
     if not pd.isnull(height): line1_parts.append(f"{int(height)} cm")
@@ -894,7 +884,7 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
             comp or "",
             f"{int(mins)} mins" if pd.notnull(mins) else "",
             f"Rank #{rank_val}" if rank_val is not None else "",
-            f"Z {weighted_z:.2f} ({rating})"          # <-- weighted Z here
+            f"Z {weighted_z:.2f}"                     # <-- weighted Z only
         ] if p
     ])
     ax.set_title(f"{line1}\n{line2}", color="black", size=22, pad=20, y=1.12)
@@ -908,15 +898,6 @@ def plot_radial_bar_grouped(player_name, plot_data, metric_groups, group_colors)
             ax.add_artist(ab)
     except Exception:
         pass
-
-    # ---------- Badge inside the radar ----------
-    ax.text(0, 18, f"Z: {avg_z:.2f}",
-            ha="center", va="center",
-            fontsize=16, fontweight="bold", color="black")
-    ax.text(0, 10, rating,
-            ha="center", va="center",
-            fontsize=13, fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.35", facecolor=badge_color, edgecolor="none"))
 
     st.pyplot(fig, use_container_width=True)
 
